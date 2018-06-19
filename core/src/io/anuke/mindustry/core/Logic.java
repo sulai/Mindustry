@@ -20,6 +20,7 @@ import io.anuke.ucore.core.Events;
 import io.anuke.ucore.core.Timers;
 import io.anuke.ucore.entities.Entities;
 import io.anuke.ucore.modules.Module;
+import io.anuke.ucore.util.Log;
 import io.anuke.ucore.util.Mathf;
 
 import static io.anuke.mindustry.Vars.*;
@@ -33,12 +34,27 @@ import static io.anuke.mindustry.Vars.*;
  */
 public class Logic extends Module {
     private final Array<EnemySpawn> spawns = WaveCreator.getSpawns();
-
+    private boolean serverPaused = false;
+    
     @Override
     public void init(){
         Entities.initPhysics();
         Entities.collisions().setCollider(tilesize, world::solid);
     }
+    
+    public void pauseServer() {
+    	serverPaused = true;
+    	Log.info("Current Serverstate: '{0}'", serverPaused ? "Paused":"Unpaused");
+    } 
+    
+    public void unpauseServer() {
+		serverPaused = true;
+		Log.info("Current Serverstate: '{0}'", serverPaused ? "Paused":"Unpaused");
+    } 
+    
+    public boolean isServerPaused() {
+		return serverPaused;
+    } 
 
     public void play(){
         state.wavetime = wavespace * state.difficulty.timeScaling * 2;
@@ -113,7 +129,7 @@ public class Logic extends Module {
 
             if(control != null) control.triggerInputUpdate();
 
-            if(!state.is(State.paused) || Net.active()){
+            if((!state.is(State.paused) || Net.active()) && !serverPaused){
                 Timers.update();
             }
 
@@ -126,7 +142,7 @@ public class Logic extends Module {
                 Events.fire(GameOverEvent.class);
             }
 
-            if(!state.is(State.paused) || Net.active()){
+            if((!state.is(State.paused) || Net.active()) && !serverPaused){
 
                 if(!state.mode.disableWaveTimer){
 

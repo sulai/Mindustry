@@ -117,6 +117,9 @@ public class NetServer extends Module{
             }
 
             Platform.instance.updateRPC();
+            if(logic.isServerPaused()) {
+            	logic.unpauseServer();
+            }
         });
 
         Net.handleServer(MapAckPacket.class, (id, packet) -> {
@@ -149,7 +152,7 @@ public class NetServer extends Module{
                 return;
             }
 
-            Log.info("&y{0} has disconnected.", player.name);
+            Log.info("&y{0} has disconnected", player.name);
             netCommon.sendMessage("[accent]" + player.name + " has disconnected.");
             player.remove();
 
@@ -160,6 +163,12 @@ public class NetServer extends Module{
 
             Platform.instance.updateRPC();
             admins.save();
+            
+            
+            Log.info("Player Online: {0}", playerGroup.size());
+            if(playerGroup.size() == 1) {
+            	logic.pauseServer();
+            }
         });
 
         Net.handleServer(PositionPacket.class, (id, packet) -> {
@@ -413,6 +422,9 @@ public class NetServer extends Module{
         Timers.runTask(2f, con::close);
 
         admins.save();
+        if(playerGroup.size() == 1) {
+        	logic.pauseServer();
+        }
     }
 
     void sendMessageTo(int id, String message){
