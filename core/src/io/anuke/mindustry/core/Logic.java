@@ -48,7 +48,7 @@ public class Logic extends Module {
     } 
     
     public void unpauseServer() {
-		serverPaused = true;
+		serverPaused = false;
 		Log.info("Current Serverstate: '{0}'", serverPaused ? "Paused":"Unpaused");
     } 
     
