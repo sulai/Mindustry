@@ -363,6 +363,7 @@ public class NetworkIO {
         buffer.putInt(playerGroup.size());
         buffer.putInt(state.wave);
         buffer.putInt(Version.build);
+        buffer.putInt(logic.isServerPaused()? 1 : 0);
         return buffer;
     }
 
@@ -381,7 +382,8 @@ public class NetworkIO {
         int players = buffer.getInt();
         int wave = buffer.getInt();
         int version = buffer.getInt();
+        int paused = buffer.getInt();
 
-        return new Host(host, hostAddress, map, wave, players, version);
+        return new Host(host, hostAddress, map, wave, players, version, paused);
     }
 }

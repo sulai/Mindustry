@@ -157,11 +157,13 @@ public class JoinDialog extends FloatingDialog {
             }
 
             server.content.clear();
-
+ 
             server.content.table(t -> {
                 t.add(versionString).left();
                 t.row();
                 t.add("[lightgray]" + Bundles.format("text.server.hostname", host.name)).left();
+                t.row();
+                t.add("[lightgray]" + Bundles.format(host.paused > 0 ? "text.server.paused" : "text.server.unpaused")).left();
                 t.row();
                 t.add("[lightgray]" + (host.players != 1 ? Bundles.format("text.players", host.players) :
                         Bundles.format("text.players.single", host.players))).left();

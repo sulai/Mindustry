@@ -7,13 +7,15 @@ public class Host {
     public final int wave;
     public final int players;
     public final int version;
+    public final int paused;
 
-    public Host(String name, String address, String mapname, int wave, int players, int version){
+    public Host(String name, String address, String mapname, int wave, int players, int version, int paused){
         this.name = name;
         this.address = address;
         this.players = players;
         this.mapname = mapname;
         this.wave = wave;
         this.version = version;
+        this.paused = paused;
     }
 }

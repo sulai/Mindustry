@@ -45,6 +45,7 @@ public class Logic extends Module {
     public void pauseServer() {
     	serverPaused = true;
     	Log.info("Current Serverstate: '{0}'", serverPaused ? "Paused":"Unpaused");
+    	Entities.update(playerGroup);
     } 
     
     public void unpauseServer() {
