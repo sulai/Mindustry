@@ -11,6 +11,7 @@ import io.anuke.mindustry.game.EventType.WaveEvent;
 import io.anuke.mindustry.game.SpawnPoint;
 import io.anuke.mindustry.game.WaveCreator;
 import io.anuke.mindustry.graphics.Fx;
+import io.anuke.mindustry.io.SaveIO;
 import io.anuke.mindustry.net.Net;
 import io.anuke.mindustry.net.NetEvents;
 import io.anuke.mindustry.world.Tile;
@@ -24,6 +25,7 @@ import io.anuke.ucore.util.Log;
 import io.anuke.ucore.util.Mathf;
 
 import static io.anuke.mindustry.Vars.*;
+import static io.anuke.ucore.util.Log.info;
 
 /**Logic module.
  * Handles all logic for entities and waves.
@@ -35,6 +37,7 @@ import static io.anuke.mindustry.Vars.*;
 public class Logic extends Module {
     private final Array<EnemySpawn> spawns = WaveCreator.getSpawns();
     private boolean serverPaused = false;
+    private int saveSlot = 10;
     
     @Override
     public void init(){
@@ -44,13 +47,23 @@ public class Logic extends Module {
     
     public void pauseServer() {
     	serverPaused = true;
-    	Log.info("Current Serverstate: '{0}'", serverPaused ? "Paused":"Unpaused");
+    	Log.info("{0} server", serverPaused ? "Paused":"Unpaused");
     	Entities.update(playerGroup);
+    	if(saveSlot < 20) {
+    		SaveIO.saveToSlot(saveSlot);
+    		Log.info("Auto-Saved to slot {0}.", saveSlot);
+    		saveSlot++;
+    		if(saveSlot >= 20) {
+    			saveSlot = 10;
+    		}
+    		
+    	}
+    	
     } 
     
     public void unpauseServer() {
 		serverPaused = false;
-		Log.info("Current Serverstate: '{0}'", serverPaused ? "Paused":"Unpaused");
+		Log.info("{0} server", serverPaused ? "Paused":"Unpaused");
     } 
     
     public boolean isServerPaused() {

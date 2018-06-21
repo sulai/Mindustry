@@ -20,6 +20,8 @@ import io.anuke.kryonet.DefaultThreadImpl;
 import io.anuke.kryonet.KryoClient;
 import io.anuke.kryonet.KryoServer;
 import io.anuke.mindustry.core.ThreadHandler.ThreadProvider;
+import io.anuke.mindustry.Mindustry;
+import io.anuke.mindustry.TextFieldDialogListener;
 import io.anuke.mindustry.core.Platform;
 import io.anuke.mindustry.net.Net;
 import io.anuke.ucore.core.Settings;
@@ -33,18 +35,18 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.Random;
 
-public class AndroidLauncher extends AndroidApplication{
+public class AndroidLauncher extends AndroidApplication {
 	boolean doubleScaleTablets = true;
 	int WRITE_REQUEST_CODE = 1;
 
 	@Override
-	protected void onCreate(Bundle savedInstanceState){
+	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
 		AndroidApplicationConfiguration config = new AndroidApplicationConfiguration();
 		config.useImmersiveMode = true;
 
-		Platform.instance = new Platform(){
+		Platform.instance = new Platform() {
 			DateFormat format = SimpleDateFormat.getDateTimeInstance();
 
 			@Override
@@ -53,22 +55,22 @@ public class AndroidLauncher extends AndroidApplication{
 			}
 
 			@Override
-			public String format(Date date){
+			public String format(Date date) {
 				return format.format(date);
 			}
 
 			@Override
-			public String format(int number){
+			public String format(int number) {
 				return NumberFormat.getIntegerInstance().format(number);
 			}
 
 			@Override
-			public void addDialog(TextField field, int length){
+			public void addDialog(TextField field, int length) {
 				TextFieldDialogListener.add(field, 0, length);
 			}
 
 			@Override
-			public String getLocaleName(Locale locale){
+			public String getLocaleName(Locale locale) {
 				return locale.getDisplayName(locale);
 			}
 
@@ -80,18 +82,17 @@ public class AndroidLauncher extends AndroidApplication{
 			@Override
 			public void requestWritePerms() {
 				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-					if(checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED &&
-							checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-						requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE,
-								Manifest.permission.READ_EXTERNAL_STORAGE}, WRITE_REQUEST_CODE);
-					}else{
+					if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
+							&& checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+						requestPermissions(new String[] { Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE }, WRITE_REQUEST_CODE);
+					} else {
 
 						if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-							requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, WRITE_REQUEST_CODE);
+							requestPermissions(new String[] { Manifest.permission.WRITE_EXTERNAL_STORAGE }, WRITE_REQUEST_CODE);
 						}
 
 						if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-							requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, WRITE_REQUEST_CODE);
+							requestPermissions(new String[] { Manifest.permission.READ_EXTERNAL_STORAGE }, WRITE_REQUEST_CODE);
 						}
 					}
 				}
@@ -110,31 +111,30 @@ public class AndroidLauncher extends AndroidApplication{
 			@Override
 			public byte[] getUUID() {
 				try {
-					String s = Secure.getString(getContext().getContentResolver(),
-							Secure.ANDROID_ID);
+					String s = Secure.getString(getContext().getContentResolver(), Secure.ANDROID_ID);
 
 					int len = s.length();
 					byte[] data = new byte[len / 2];
 					for (int i = 0; i < len; i += 2) {
-						data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
-								+ Character.digit(s.charAt(i + 1), 16));
+						data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4) + Character.digit(s.charAt(i + 1), 16));
 					}
 
-					if(new String(Base64Coder.encode(data)).equals("AAAAAAAAAOA=")) throw new RuntimeException("Bad UUID.");
+					if (new String(Base64Coder.encode(data)).equals("AAAAAAAAAOA="))
+						throw new RuntimeException("Bad UUID.");
 
 					return data;
-				}catch (Exception e){
+				} catch (Exception e) {
 
-                    String uuid = Settings.getString("uuid", "");
-                    if(uuid.isEmpty()){
-                        byte[] result = new byte[8];
-                        new Random().nextBytes(result);
-                        uuid = new String(Base64Coder.encode(result));
-                        Settings.putString("uuid", uuid);
-                        Settings.save();
-                        return result;
-                    }
-                    return Base64Coder.decode(uuid);
+					String uuid = Settings.getString("uuid", "");
+					if (uuid.isEmpty()) {
+						byte[] result = new byte[8];
+						new Random().nextBytes(result);
+						uuid = new String(Base64Coder.encode(result));
+						Settings.putString("uuid", uuid);
+						Settings.save();
+						return result;
+					}
+					return Base64Coder.decode(uuid);
 				}
 			}
 		};
@@ -148,33 +148,33 @@ public class AndroidLauncher extends AndroidApplication{
 			Log.e("SecurityException", "Google Play Services not available.");
 		}
 
-		if(doubleScaleTablets && isTablet(this.getContext())){
+		if (doubleScaleTablets && isTablet(this.getContext())) {
 			Unit.dp.addition = 0.5f;
 		}
-		
+
 		config.hideStatusBar = true;
 
-        Net.setClientProvider(new KryoClient());
-        Net.setServerProvider(new KryoServer());
+		Net.setClientProvider(new KryoClient());
+		Net.setServerProvider(new KryoServer());
 
-        initialize(new Mindustry(), config);
+		initialize(new Mindustry(), config);
 	}
-	
+
 	private boolean isPackageInstalled(String packagename) {
-	    try {
-	    	getPackageManager().getPackageInfo(packagename, 0);
-	        return true;
-	    } catch (Exception e) {
-	        return false;
-	    }
+		try {
+			getPackageManager().getPackageInfo(packagename, 0);
+			return true;
+		} catch (Exception e) {
+			return false;
+		}
 	}
-	
+
 	private boolean isTablet(Context context) {
-		TelephonyManager manager = (TelephonyManager)context.getSystemService(Context.TELEPHONY_SERVICE);
+		TelephonyManager manager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
 		return manager.getPhoneType() == TelephonyManager.PHONE_TYPE_NONE;
 	}
-	
-	private void showDonations(){
+
+	private void showDonations() {
 		Intent intent = new Intent(this, DonationsActivity.class);
 		startActivity(intent);
 	}

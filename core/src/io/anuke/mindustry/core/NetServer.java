@@ -24,7 +24,18 @@ import io.anuke.ucore.util.Timer;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Date;
+
 import static io.anuke.mindustry.Vars.*;
 
 public class NetServer extends Module{
@@ -40,6 +51,9 @@ public class NetServer extends Module{
     private ObjectMap<String, ByteArray> weapons = new ObjectMap<>();
     private boolean closing = false;
     private Timer timer = new Timer(5);
+    
+    File logs = new File("./logs");
+    File logTxt = new File("Log-" + LocalDate.now() + ".txt");
 
     public NetServer(){
 
@@ -75,7 +89,7 @@ public class NetServer extends Module{
                 return;
             }
 
-            Log.info("Recieved connect packet for player '{0}' / UUID {1} / IP {2}", packet.name, uuid, trace.ip);
+            Log.info("Received connect packet for player '{0}' / UUID {1} / IP {2}", packet.name, uuid, trace.ip);
 
             String ip = Net.getConnection(id).address;
 
@@ -142,6 +156,7 @@ public class NetServer extends Module{
             player.add();
             Log.info("&y{0} has connected.", player.name);
             netCommon.sendMessage("[accent]" + player.name + " has connected.");
+            writeToLogFile(player.name + " has connected.");
         });
 
         Net.handleServer(Disconnect.class, (id, packet) -> {
@@ -164,11 +179,11 @@ public class NetServer extends Module{
             Platform.instance.updateRPC();
             admins.save();
             
-            
-            Log.info("Player Online: {0}", playerGroup.size());
             if(playerGroup.size() == 1) {
             	logic.pauseServer();
             }
+            writeToLogFile(player.name + " has disconnected.");
+            Log.info("Player Online: {0}", playerGroup.size());
         });
 
         Net.handleServer(PositionPacket.class, (id, packet) -> {
@@ -511,5 +526,42 @@ public class NetServer extends Module{
            
             Net.send(packet, SendMode.udp);
         }
+    }
+    
+    private boolean createLogFolder() {
+    	try {
+    		if(Files.exists(logs.toPath(), LinkOption.NOFOLLOW_LINKS)) {
+        		return true;
+        	} else {
+        		logs.mkdir();
+        		return true;
+        	}
+    	} catch (Exception e) {
+    		e.printStackTrace();
+    		return false;
+    	}
+    }
+    
+    private void writeToLogFile(String string) {
+    	if(createLogFolder()) {
+    		File helper = new File(logs.getAbsolutePath() + "/" + logTxt.getName());
+        	PrintWriter writer = null;
+        	if(Files.exists(helper.toPath(), LinkOption.NOFOLLOW_LINKS)) {
+        		try {
+        			writer = new PrintWriter(new FileOutputStream(helper, true));
+        		} catch(FileNotFoundException e) {
+        			e.printStackTrace();
+        		}
+        	} else {
+        		try {
+        			writer = new PrintWriter(helper.getAbsolutePath(), "UTF-8");
+        		} catch(FileNotFoundException|UnsupportedEncodingException e) {
+        			e.printStackTrace();
+        		}
+        	}
+        	
+        	writer.println("[" + LocalDateTime.now() + "]: " + string);
+        	writer.close();
+    	}
     }
 }

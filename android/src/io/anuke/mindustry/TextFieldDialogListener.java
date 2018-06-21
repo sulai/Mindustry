@@ -4,6 +4,8 @@ package io.anuke.mindustry;
 import android.text.InputType;
 import com.badlogic.gdx.Application.ApplicationType;
 import com.badlogic.gdx.Gdx;
+
+import io.anuke.mindustry.TextFieldDialogListener;
 import io.anuke.ucore.scene.event.ChangeListener;
 import io.anuke.ucore.scene.event.ClickListener;
 import io.anuke.ucore.scene.event.InputEvent;

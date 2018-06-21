@@ -2,6 +2,8 @@
 
 /core/assets/mindustry-saves/
 /core/assets/mindustry-maps/
+/mindustry-maps/
+/mindustry-saves/
 /deploy/
 /desktop/packr-out/
 /desktop/packr-export/
@@ -17,6 +19,12 @@
 /core/assets/gifexport/
 /core/assets/version.properties
 *.gif
+
+*.bat
+
+/log/
+log*
+Log*
 
 version.properties
 
