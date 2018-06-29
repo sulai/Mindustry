@@ -1,27 +1,28 @@
 package io.anuke.mindustry;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.Pixmap.Filter;
-import com.badlogic.gdx.graphics.PixmapIO;
+import com.badlogic.gdx.utils.async.AsyncExecutor;
 import io.anuke.mindustry.core.*;
-import io.anuke.mindustry.io.BlockLoader;
 import io.anuke.mindustry.io.BundleLoader;
+import io.anuke.ucore.core.Timers;
 import io.anuke.ucore.modules.ModuleCore;
 import io.anuke.ucore.util.Log;
 
 import static io.anuke.mindustry.Vars.*;
 
 public class Mindustry extends ModuleCore {
+	private AsyncExecutor exec = new AsyncExecutor(1);
 
 	@Override
 	public void init(){
+		Timers.mark();
+
+		Vars.init();
+
 		debug = Platform.instance.isDebug();
 
 		Log.setUseColors(false);
 		BundleLoader.load();
-		BlockLoader.load();
+		ContentLoader.load();
 
 		module(logic = new Logic());
 		module(world = new World());
@@ -30,7 +31,8 @@ public class Mindustry extends ModuleCore {
 		module(ui = new UI());
 		module(netServer = new NetServer());
 		module(netClient = new NetClient());
-		module(netCommon = new NetCommon());
+
+        Log.info("Time to load [total]: {0}", Timers.elapsed());
 	}
 
 	@Override

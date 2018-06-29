@@ -3,12 +3,9 @@ package io.anuke.mindustry.ui.dialogs;
 import com.badlogic.gdx.utils.reflect.ClassReflection;
 import io.anuke.mindustry.core.GameState.State;
 import io.anuke.mindustry.net.Net;
-import io.anuke.mindustry.ui.PressGroup;
 import io.anuke.ucore.core.Timers;
-import io.anuke.ucore.scene.Element;
 import io.anuke.ucore.scene.builders.build;
 import io.anuke.ucore.scene.builders.imagebutton;
-import io.anuke.ucore.scene.ui.ImageButton;
 import io.anuke.ucore.util.Bundles;
 
 import static io.anuke.mindustry.Vars.*;
@@ -50,20 +47,30 @@ public class PausedDialog extends FloatingDialog{
 			content().row();
 			content().addButton("$text.savegame", () -> {
 				save.show();
-			}).disabled(b -> world.getMap().id == -1);
+			});
 
 			content().row();
 			content().addButton("$text.loadgame", () -> {
 				load.show();
 			}).disabled(b -> Net.active());
 
+			//Local multiplayer is currently functional, but disabled.
+			/*
+            content().row();
+            content().addButton("$text.addplayers", () -> {
+                ui.localplayers.show();
+            }).disabled(b -> Net.active());*/
+
 			content().row();
 
-			if(!gwt) {
-				content().addButton("$text.hostserver", () -> {
+			content().addButton("$text.hostserver", () -> {
+				if(!gwt){
 					ui.host.show();
-				}).disabled(b -> Net.active());
-			}
+				}else{
+					ui.showInfo("$text.host.web");
+				}
+			}).disabled(b -> Net.active());
+
 
             content().row();
 
@@ -78,8 +85,6 @@ public class PausedDialog extends FloatingDialog{
 		}else{
 			build.begin(content());
 			
-			PressGroup group = new PressGroup();
-			
 			content().defaults().size(120f).pad(5);
 			float isize = 14f*4;
 			
@@ -93,7 +98,6 @@ public class PausedDialog extends FloatingDialog{
 			
 			imagebutton sa = new imagebutton("icon-save", isize, save::show);
 			sa.text("$text.save").padTop(4f);
-			sa.cell.disabled(b -> world.getMap().id == -1);
 
 			content().row();
 			
@@ -115,12 +119,6 @@ public class PausedDialog extends FloatingDialog{
 				});
 			}).text("Quit").padTop(4f);
 			
-			for(Element e : content().getChildren()){
-				if(e instanceof ImageButton){
-					group.add((ImageButton)e);
-				}
-			}
-			
 			build.end();
 		}
 	}
@@ -129,7 +127,6 @@ public class PausedDialog extends FloatingDialog{
 		if(control.getSaves().getCurrent() == null ||
 				!control.getSaves().getCurrent().isAutosave()){
 			state.set(State.menu);
-			control.tutorial().reset();
 			return;
 		}
 

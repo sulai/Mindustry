@@ -29,8 +29,10 @@ public class SaveDialog extends LoadDialog{
 		slots.row();
 		slots.addImageTextButton("$text.save.new", "icon-add", "clear", 14*3, () ->
 			ui.showTextInput("$text.save", "$text.save.newslot", "", text -> {
-				control.getSaves().addSave(text);
-				setup();
+				ui.loadAnd("$text.saving", () -> {
+					control.getSaves().addSave(text);
+					setup();
+				});
 			})
 		).fillX().margin(10f).minWidth(300f).height(70f).pad(4f).padRight(-4);
 	}
@@ -54,6 +56,7 @@ public class SaveDialog extends LoadDialog{
 			try{
 				slot.save();
 			}catch(Throwable e){
+				e.printStackTrace();
 				e = (e.getCause() == null ? e : e.getCause());
 
 				ui.showError("[orange]"+Bundles.get("text.savefail")+"\n[white]" + ClassReflection.getSimpleName(e.getClass()) + ": " + e.getMessage() + "\n" + "at " + e.getStackTrace()[0].getFileName() + ":" + e.getStackTrace()[0].getLineNumber());

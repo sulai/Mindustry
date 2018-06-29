@@ -8,13 +8,14 @@ import com.badlogic.gdx.net.HttpRequestBuilder;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.IntMap;
 import com.badlogic.gdx.utils.ObjectMap;
+import com.badlogic.gdx.utils.Pools;
 import com.badlogic.gdx.utils.reflect.ClassReflection;
 import io.anuke.mindustry.core.Platform;
 import io.anuke.mindustry.net.Packet.ImportantPacket;
 import io.anuke.mindustry.net.Packet.UnimportantPacket;
-import io.anuke.mindustry.net.Streamable.StreamBegin;
+import io.anuke.mindustry.net.Packets.StreamBegin;
 import io.anuke.mindustry.net.Streamable.StreamBuilder;
-import io.anuke.mindustry.net.Streamable.StreamChunk;
+import io.anuke.mindustry.net.Packets.StreamChunk;
 import io.anuke.ucore.core.Timers;
 import io.anuke.ucore.function.BiConsumer;
 import io.anuke.ucore.function.Consumer;
@@ -25,6 +26,8 @@ import java.io.IOException;
 import static io.anuke.mindustry.Vars.*;
 
 public class Net{
+	public static final Object packetPoolLock = new Object();
+
 	private static boolean server;
 	private static boolean active;
 	private static boolean clientLoaded;
@@ -161,7 +164,6 @@ public class Net{
 	
 	/**Call to handle a packet being recieved for the client.*/
 	public static void handleClientReceived(Object object){
-		if(debugNet) clientDebug.handle(object);
 
 		if(object instanceof StreamBegin) {
 			StreamBegin b = (StreamBegin) object;
@@ -179,12 +181,20 @@ public class Net{
 			}
 		}else if(clientListeners.get(object.getClass()) != null ||
 					listeners.get(object.getClass()) != null){
+
 			if(clientLoaded || object instanceof ImportantPacket){
 				if(clientListeners.get(object.getClass()) != null) clientListeners.get(object.getClass()).accept(object);
 				if(listeners.get(object.getClass()) != null) listeners.get(object.getClass()).accept(object);
+				synchronized (packetPoolLock) {
+					Pools.free(object);
+				}
 			}else if(!(object instanceof UnimportantPacket)){
 				packetQueue.add(object);
 				Log.info("Queuing packet {0}.", ClassReflection.getSimpleName(object.getClass()));
+			}else{
+				synchronized (packetPoolLock) {
+					Pools.free(object);
+				}
 			}
 		}else{
 			Log.err("Unhandled packet type: '{0}'!", ClassReflection.getSimpleName(object.getClass()));
@@ -193,11 +203,13 @@ public class Net{
 
 	/**Call to handle a packet being recieved for the server.*/
 	public static void handleServerReceived(int connection, Object object){
-		if(debugNet) serverDebug.handle(connection, object);
 
 		if(serverListeners.get(object.getClass()) != null || listeners.get(object.getClass()) != null){
 			if(serverListeners.get(object.getClass()) != null) serverListeners.get(object.getClass()).accept(connection, object);
 			if(listeners.get(object.getClass()) != null) listeners.get(object.getClass()).accept(object);
+			synchronized (packetPoolLock) {
+				Pools.free(object);
+			}
 		}else{
 			Log.err("Unhandled packet type: '{0}'!", ClassReflection.getSimpleName(object.getClass()));
 		}

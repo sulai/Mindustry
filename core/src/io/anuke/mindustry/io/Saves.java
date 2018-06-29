@@ -6,18 +6,17 @@ import com.badlogic.gdx.utils.async.AsyncExecutor;
 import io.anuke.mindustry.core.GameState.State;
 import io.anuke.mindustry.game.Difficulty;
 import io.anuke.mindustry.game.GameMode;
-import io.anuke.mindustry.world.Map;
 import io.anuke.ucore.core.Settings;
 import io.anuke.ucore.core.Timers;
+import io.anuke.ucore.util.ThreadArray;
 
 import java.io.IOException;
 
-import static io.anuke.mindustry.Vars.saveSlots;
-import static io.anuke.mindustry.Vars.state;
+import static io.anuke.mindustry.Vars.*;
 
 public class Saves {
     private int nextSlot;
-    private Array<SaveSlot> saves = new Array<>();
+    private Array<SaveSlot> saves = new ThreadArray<>();
     private SaveSlot current;
     private boolean saving;
     private float time;
@@ -130,7 +129,7 @@ public class Saves {
         }
 
         public String getName(){
-            return Settings.getString("save-"+index+"-name");
+            return Settings.getString("save-"+index+"-name", "untittled");
         }
 
         public void setName(String name){
@@ -151,7 +150,7 @@ public class Saves {
         }
 
         public boolean isAutosave(){
-            return Settings.getBool("save-"+index+"-autosave");
+            return Settings.getBool("save-"+index+"-autosave", !gwt);
         }
 
         public void setAutosave(boolean save){
@@ -169,8 +168,8 @@ public class Saves {
 
         public void exportFile(FileHandle file) throws IOException{
             try{
-                if(!file.extension().equals("mins")){
-                    file = file.parent().child(file.nameWithoutExtension() + ".mins");
+                if(!file.extension().equals(saveExtension)){
+                    file = file.parent().child(file.nameWithoutExtension() + "." + saveExtension);
                 }
                 SaveIO.fileFor(index).copyTo(file);
             }catch (Exception e){

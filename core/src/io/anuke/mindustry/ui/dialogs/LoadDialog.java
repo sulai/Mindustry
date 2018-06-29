@@ -3,6 +3,7 @@ package io.anuke.mindustry.ui.dialogs;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.utils.Array;
+import io.anuke.mindustry.Vars;
 import io.anuke.mindustry.core.GameState.State;
 import io.anuke.mindustry.core.Platform;
 import io.anuke.mindustry.io.SaveIO;
@@ -94,10 +95,10 @@ public class LoadDialog extends FloatingDialog{
 								} catch (IOException e) {
 									ui.showError(Bundles.format("text.save.export.fail", Strings.parseException(e, false)));
 								}
-							}, false, "mins");
+							}, false, saveExtension);
                         }else{
 					        try {
-                                FileHandle file = Gdx.files.local("save-" + slot.getName() + ".mins");
+                                FileHandle file = Gdx.files.local("save-" + slot.getName() + "." + Vars.saveExtension);
                                 slot.exportFile(file);
                                 Platform.instance.shareFile(file);
                             }catch (Exception e){
@@ -113,7 +114,7 @@ public class LoadDialog extends FloatingDialog{
 
 			button.defaults().padBottom(3);
 			button.row();
-			button.add(Bundles.format("text.save.map", color+slot.getMap().localized()));
+			button.add(Bundles.format("text.save.map", color+ (slot.getMap() == null ? "Unknown" : slot.getMap().meta.name())));
 			button.row();
 			button.add(Bundles.get("text.level.mode") + " " +color+ slot.getMode());
 			button.row();
@@ -161,7 +162,7 @@ public class LoadDialog extends FloatingDialog{
 				}else{
 					ui.showError("$text.save.import.invalid");
 				}
-			}, true, "mins");
+			}, true, saveExtension);
 		}).fillX().margin(10f).minWidth(300f).height(70f).pad(4f).padRight(-4);
 	}
 

@@ -4,7 +4,6 @@ import io.anuke.mindustry.entities.Player;
 import io.anuke.mindustry.net.Administration.PlayerInfo;
 import io.anuke.mindustry.net.Net;
 import io.anuke.mindustry.net.NetConnection;
-import io.anuke.mindustry.net.NetEvents;
 import io.anuke.ucore.scene.ui.ScrollPane;
 import io.anuke.ucore.scene.ui.layout.Table;
 
@@ -49,7 +48,7 @@ public class AdminsDialog extends FloatingDialog {
                     for(Player player : playerGroup.all()){
                         NetConnection c = Net.getConnection(player.clientid);
                         if(c != null){
-                            NetEvents.handleAdminSet(player, false);
+                            //CallClient.adminSet(player, false);
                             break;
                         }
                     }

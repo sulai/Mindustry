@@ -11,12 +11,10 @@ import io.anuke.mindustry.core.Platform;
 import io.anuke.mindustry.core.ThreadHandler.ThreadProvider;
 import io.anuke.mindustry.net.Net;
 import io.anuke.mindustry.ui.dialogs.FileChooser;
-import io.anuke.ucore.UCore;
-import io.anuke.ucore.core.Settings;
 import io.anuke.ucore.function.Consumer;
+import io.anuke.ucore.util.OS;
 import io.anuke.ucore.util.Strings;
 
-import javax.swing.*;
 import java.net.NetworkInterface;
 import java.text.DateFormat;
 import java.text.NumberFormat;
@@ -24,12 +22,11 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Locale;
-import java.util.Random;
 
 import static io.anuke.mindustry.Vars.*;
 
 public class DesktopPlatform extends Platform {
-    final static boolean useDiscord = UCore.getPropertyNotNull("sun.arch.data.model").equals("64");
+    final static boolean useDiscord = OS.is64Bit;
     final static String applicationId = "398246104468291591";
     final static DateFormat format = SimpleDateFormat.getDateTimeInstance();
     String[] args;
@@ -60,7 +57,7 @@ public class DesktopPlatform extends Platform {
 
     @Override
     public void showError(String text){
-        JOptionPane.showMessageDialog(null, text);
+
     }
 
     @Override
@@ -70,6 +67,7 @@ public class DesktopPlatform extends Platform {
 
     @Override
     public void updateRPC() {
+
         if(!useDiscord) return;
 
         DiscordRichPresence presence = new DiscordRichPresence();
@@ -113,7 +111,7 @@ public class DesktopPlatform extends Platform {
     }
 
     @Override
-    public byte[] getUUID() {
+    public String getUUID() {
         try {
             Enumeration<NetworkInterface> e = NetworkInterface.getNetworkInterfaces();
             NetworkInterface out;
@@ -123,22 +121,13 @@ public class DesktopPlatform extends Platform {
             byte[] result = new byte[8];
             System.arraycopy(bytes, 0, result, 0, bytes.length);
 
-            if(new String(Base64Coder.encode(result)).equals("AAAAAAAAAOA=")) throw new RuntimeException("Bad UUID.");
+            String str = new String(Base64Coder.encode(result));
 
-            return result;
+            if(str.equals("AAAAAAAAAOA=")) throw new RuntimeException("Bad UUID.");
+
+            return str;
         }catch (Exception e){
-            Settings.defaults("uuid", "");
-
-            String uuid = Settings.getString("uuid");
-            if(uuid.isEmpty()){
-                byte[] result = new byte[8];
-                new Random().nextBytes(result);
-                uuid = new String(Base64Coder.encode(result));
-                Settings.putString("uuid", uuid);
-                Settings.save();
-                return result;
-            }
-            return Base64Coder.decode(uuid);
+            return super.getUUID();
         }
     }
 

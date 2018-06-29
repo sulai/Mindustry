@@ -2,13 +2,12 @@ package io.anuke.mindustry.ui.dialogs;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Keys;
-import com.badlogic.gdx.graphics.Colors;
 import com.badlogic.gdx.utils.Align;
 import io.anuke.mindustry.Vars;
 import io.anuke.mindustry.core.GameState.State;
+import io.anuke.mindustry.graphics.Palette;
 import io.anuke.mindustry.net.Net;
 import io.anuke.ucore.core.Core;
-import io.anuke.ucore.core.Graphics;
 import io.anuke.ucore.core.Settings;
 import io.anuke.ucore.function.Consumer;
 import io.anuke.ucore.scene.Element;
@@ -58,7 +57,7 @@ public class SettingsMenuDialog extends SettingsDialog{
 		title().setAlignment(Align.center);
 		getTitleTable().row();
 		getTitleTable().add(new Image("white"))
-		.growX().height(3f).pad(4f).get().setColor(Colors.get("accent"));
+		.growX().height(3f).pad(4f).get().setColor(Palette.accent);
 
 		content().clearChildren();
 		content().remove();
@@ -136,7 +135,7 @@ public class SettingsMenuDialog extends SettingsDialog{
 		game.sliderPref("saveinterval", 90, 10, 5*120, i -> Bundles.format("setting.seconds", i));
 
 		if(!gwt){
-			graphics.checkPref("multithread", false, threads::setEnabled);
+			graphics.checkPref("multithread", true, threads::setEnabled);
 
 			if(Settings.getBool("multithread")){
 				threads.setEnabled(true);
@@ -164,21 +163,6 @@ public class SettingsMenuDialog extends SettingsDialog{
         graphics.sliderPref("previewopacity", 50, 0, 100, i -> i + "%");
 		graphics.checkPref("indicators", true);
 		graphics.checkPref("healthbars", true);
-		graphics.checkPref("pixelate", true, b -> {
-			if(b){
-				renderer.pixelSurface.setScale(Core.cameraScale);
-				renderer.shadowSurface.setScale(Core.cameraScale);
-				renderer.shieldSurface.setScale(Core.cameraScale);
-				Graphics.getEffects1().setScale(Core.cameraScale);
-				Graphics.getEffects2().setScale(Core.cameraScale);
-			}else{
-				renderer.shadowSurface.setScale(1);
-				renderer.shieldSurface.setScale(1);
-				Graphics.getEffects1().setScale(1);
-				Graphics.getEffects2().setScale(1);
-			}
-			renderer.setPixelate(b);
-		});
 	}
 
 	private void back(){

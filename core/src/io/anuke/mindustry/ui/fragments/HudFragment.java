@@ -2,19 +2,28 @@ package io.anuke.mindustry.ui.fragments;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Interpolation;
+import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.Scaling;
 import io.anuke.mindustry.core.GameState.State;
 import io.anuke.mindustry.net.Net;
+import io.anuke.mindustry.type.Recipe;
+import io.anuke.mindustry.ui.IntFormat;
+import io.anuke.mindustry.ui.Minimap;
 import io.anuke.ucore.core.Core;
 import io.anuke.ucore.core.Inputs;
-import io.anuke.ucore.core.Settings;
+import io.anuke.ucore.scene.Element;
+import io.anuke.ucore.scene.Group;
 import io.anuke.ucore.scene.actions.Actions;
 import io.anuke.ucore.scene.builders.imagebutton;
 import io.anuke.ucore.scene.builders.label;
 import io.anuke.ucore.scene.builders.table;
 import io.anuke.ucore.scene.event.Touchable;
+import io.anuke.ucore.scene.ui.Image;
 import io.anuke.ucore.scene.ui.ImageButton;
 import io.anuke.ucore.scene.ui.Label;
+import io.anuke.ucore.scene.ui.layout.Stack;
 import io.anuke.ucore.scene.ui.layout.Table;
 import io.anuke.ucore.util.Bundles;
 
@@ -26,12 +35,14 @@ public class HudFragment implements Fragment{
 	private ImageButton menu, flip;
 	private Table respawntable;
 	private Table wavetable;
-	private Label infolabel;
+	private Table infolabel;
+	private Table lastUnlockTable;
+	private Table lastUnlockLayout;
 	private boolean shown = true;
 	private float dsize = 58;
 	private float isize = 40;
 
-	public void build(){
+	public void build(Group parent){
 
 		//menu at top left
 		new table(){{
@@ -55,7 +66,7 @@ public class HudFragment implements Fragment{
 
 					new imagebutton("icon-pause", isize, () -> {
 						if (Net.active()) {
-							ui.listfrag.visible = !ui.listfrag.visible;
+							ui.listfrag.toggle();
 						} else {
 							state.set(state.is(State.paused) ? State.playing : State.paused);
 						}
@@ -92,30 +103,36 @@ public class HudFragment implements Fragment{
 
 				new table() {{
 					touchable(Touchable.enabled);
-					visible(() -> shown);
 					addWaveTable();
 				}}.fillX().end();
 
 				row();
 
 				visible(() -> !state.is(State.menu));
-
-				infolabel = new Label(() -> (Settings.getBool("fps") ? (Gdx.graphics.getFramesPerSecond() + " FPS") +
-						(threads.isEnabled() ?  " / " + threads.getFPS() + " TPS" : "") + (Net.client() && !gwt ? "\nPing: " + Net.getPing() : "") : ""));
 				row();
-				add(infolabel).size(-1);
+				new table(){{
+					IntFormat fps = new IntFormat("text.fps");
+					IntFormat tps = new IntFormat("text.tps");
+					IntFormat ping = new IntFormat("text.ping");
+					new label(() -> fps.get(Gdx.graphics.getFramesPerSecond())).padRight(10);
+					new label(() -> tps.get(threads.getTPS())).visible(() -> threads.isEnabled());
+					row();
+					new label(() -> ping.get(Net.getPing())).visible(() -> Net.client() && !gwt).colspan(2);
+
+					infolabel = get();
+				}}.size(-1).end();
 
 			}}.end();
-
-
-
 		}}.end();
 
-		//tutorial ui table
 		new table(){{
-			control.tutorial().buildUI(this);
+			visible(() -> !state.is(State.menu));
+			atop();
+			aright();
 
-			visible(() -> control.tutorial().active());
+			Minimap minimap = new Minimap();
+
+			add(minimap);
 		}}.end();
 
 		//paused table
@@ -139,17 +156,6 @@ public class HudFragment implements Fragment{
 			});
 		}}.end();
 
-		//respawn table
-		new table(){{
-			new table("pane"){{
-
-				new label(()->"[orange]"+Bundles.get("text.respawn")+" " + (int)(control.getRespawnTime()/60)).scale(0.75f).pad(10);
-
-				visible(()->control.getRespawnTime() > 0 && !state.is(State.menu));
-
-			}}.end();
-		}}.end();
-
 		new table(){{
 			abottom();
 			visible(() -> !state.is(State.menu) && control.getSaves().isSaving());
@@ -158,11 +164,109 @@ public class HudFragment implements Fragment{
 
 		}}.end();
 
-		blockfrag.build();
+		blockfrag.build(Core.scene.getRoot());
+	}
+
+	/**Show unlock notification for a new recipe.*/
+	public void showUnlock(Recipe recipe){
+		blockfrag.rebuild();
+
+		//if there's currently no unlock notification...
+		if(lastUnlockTable == null) {
+			Table table = new Table("button");
+			table.update(() -> {
+				if(state.is(State.menu)){
+					table.remove();
+					lastUnlockLayout = null;
+					lastUnlockTable = null;
+				}
+			});
+			table.margin(12);
+
+			Table in = new Table();
+
+			//create texture stack for displaying
+			Stack stack = new Stack();
+			for (TextureRegion region : recipe.result.getCompactIcon()) {
+				Image image = new Image(region);
+				image.setScaling(Scaling.fit);
+				stack.add(image);
+			}
+
+			in.add(stack).size(48f).pad(2);
+
+			//add to table
+			table.add(in).padRight(8);
+			table.add("$text.unlocked");
+			table.pack();
+
+			//create container table which will align and move
+			Table container = Core.scene.table();
+			container.top().add(table);
+			container.setTranslation(0, table.getPrefHeight());
+			container.actions(Actions.translateBy(0, -table.getPrefHeight(), 1f, Interpolation.fade), Actions.delay(4f),
+					//nesting actions() calls is necessary so the right prefHeight() is used
+					Actions.run(() -> container.actions(Actions.translateBy(0, table.getPrefHeight(), 1f, Interpolation.fade), Actions.run(() ->{
+						lastUnlockTable = null;
+						lastUnlockLayout = null;
+					}), Actions.removeActor())));
+
+			lastUnlockTable = container;
+			lastUnlockLayout = in;
+		}else{
+			//max column size
+			int col = 3;
+			//max amount of elements minus extra 'plus'
+			int cap = col*col-1;
+
+			//get old elements
+			Array<Element> elements = new Array<>(lastUnlockLayout.getChildren());
+			int esize = elements.size;
+
+			//...if it's already reached the cap, ignore everything
+			if(esize > cap) return;
+
+			//get size of each element
+			float size = 48f / Math.min(elements.size + 1, col);
+
+			//correct plurals if needed
+			if(esize == 1){
+				((Label)lastUnlockLayout.getParent().find(e -> e instanceof Label)).setText("$text.unlocked.plural");
+			}
+
+			lastUnlockLayout.clearChildren();
+			lastUnlockLayout.defaults().size(size).pad(2);
+
+			for(int i = 0; i < esize && i <= cap; i ++){
+				lastUnlockLayout.add(elements.get(i));
+
+				if(i % col == col - 1){
+					lastUnlockLayout.row();
+				}
+			}
+
+			//if there's space, add it
+			if(esize < cap) {
+
+				Stack stack = new Stack();
+				for (TextureRegion region : recipe.result.getCompactIcon()) {
+					Image image = new Image(region);
+					image.setScaling(Scaling.fit);
+					stack.add(image);
+				}
+
+				lastUnlockLayout.add(stack);
+			}else{ //else, add a specific icon to denote no more space
+				lastUnlockLayout.addImage("icon-add");
+			}
+
+			lastUnlockLayout.pack();
+		}
 	}
 
 	private void toggleMenus(){
-		if (wavetable.getActions().size != 0) return;
+		wavetable.clearActions();
+		infolabel.clearActions();
 
 		float dur = 0.3f;
 		Interpolation in = Interpolation.pow3Out;
@@ -170,9 +274,10 @@ public class HudFragment implements Fragment{
 		flip.getStyle().imageUp = Core.skin.getDrawable(shown ? "icon-arrow-down" : "icon-arrow-up");
 
 		if (shown) {
+			shown = false;
 			blockfrag.toggle(false, dur, in);
-			wavetable.actions(Actions.translateBy(0, wavetable.getHeight() + dsize, dur, in), Actions.call(() -> shown = false));
-			infolabel.actions(Actions.translateBy(0, wavetable.getHeight(), dur, in), Actions.call(() -> shown = false));
+			wavetable.actions(Actions.translateBy(0, (wavetable.getHeight() + dsize) - wavetable.getTranslation().y, dur, in));
+			infolabel.actions(Actions.translateBy(0, (wavetable.getHeight()) - wavetable.getTranslation().y, dur, in));
 		} else {
 			shown = true;
 			blockfrag.toggle(true, dur, in);
@@ -184,25 +289,30 @@ public class HudFragment implements Fragment{
 	private String getEnemiesRemaining() {
 		if(state.enemies == 1) {
 			return Bundles.format("text.enemies.single", state.enemies);
-		} else return Bundles.format("text.enemies", state.enemies);
+		} else {
+			return Bundles.format("text.enemies", state.enemies);
+		}
 	}
 
 	private void addWaveTable(){
 		float uheight = 66f;
+
+		IntFormat wavef = new IntFormat("text.wave");
+		IntFormat timef = new IntFormat("text.wave.waiting");
 
 		wavetable = new table("button"){{
 			aleft();
 			new table(){{
 				aleft();
 
-				new label(() -> Bundles.format("text.wave", state.wave)).scale(fontscale*1.5f).left().padLeft(-6);
+				new label(() -> wavef.get(state.wave)).scale(fontScale *1.5f).left().padLeft(-6);
 
 				row();
 
-				new label(()-> state.enemies > 0 ?
+				new label(() -> state.enemies > 0 ?
 					getEnemiesRemaining() :
-						(control.tutorial().active() || state.mode.disableWaveTimer) ? "$text.waiting"
-								: Bundles.format("text.wave.waiting", (int) (state.wavetime / 60f)))
+						(state.mode.disableWaveTimer) ? "$text.waiting"
+								: timef.get((int) (state.wavetime / 60f)))
 				.minWidth(126).padLeft(-6).left();
 
 				margin(10f);
@@ -220,24 +330,12 @@ public class HudFragment implements Fragment{
 		new imagebutton("icon-play", 30f, () -> {
 			state.wavetime = 0f;
 		}).height(uheight).fillX().right().padTop(-8f).padBottom(-12f).padLeft(-15).padRight(-10).width(40f).update(l->{
-			boolean vis = state.enemies <= 0 && (Net.server() || !Net.active());
+			boolean vis = state.mode.disableWaveTimer && (Net.server() || !Net.active());
 			boolean paused = state.is(State.paused) || !vis;
 			
 			l.setVisible(vis);
 			l.getStyle().imageUp = Core.skin.getDrawable(vis ? "icon-play" : "clear");
 			l.setTouchable(!paused ? Touchable.enabled : Touchable.disabled);
 		});
-	}
-
-	public void updateItems(){
-		blockfrag.updateItems();
-	}
-
-	public void updateWeapons(){
-		blockfrag.updateWeapons();
-	}
-	
-	public void fadeRespawn(boolean in){
-		respawntable.addAction(Actions.color(in ? new Color(0, 0, 0, 0.3f) : Color.CLEAR, 0.3f));
 	}
 }

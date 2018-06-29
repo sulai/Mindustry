@@ -6,8 +6,8 @@ import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Pools;
+import io.anuke.mindustry.Vars;
 import io.anuke.mindustry.core.Platform;
-import io.anuke.ucore.UCore;
 import io.anuke.ucore.core.Core;
 import io.anuke.ucore.core.Timers;
 import io.anuke.ucore.function.Consumer;
@@ -20,9 +20,11 @@ import io.anuke.ucore.util.OS;
 
 import java.util.Arrays;
 
+import static io.anuke.mindustry.Vars.gwt;
+
 public class FileChooser extends FloatingDialog {
 	private Table files;
-	private FileHandle homeDirectory = Gdx.files.absolute(OS.isMac ? UCore.getProperty("user.home") + "/Downloads/" :
+	private FileHandle homeDirectory = gwt ? Gdx.files.internal("") : Gdx.files.absolute(OS.isMac ? OS.getProperty("user.home") + "/Downloads/" :
             Gdx.files.getExternalStoragePath());
 	private FileHandle directory = homeDirectory;
 	private ScrollPane pane;
@@ -210,7 +212,7 @@ public class FileChooser extends FloatingDialog {
 			files.row();
 		}
 		
-		ButtonGroup<TextButton> group = new ButtonGroup<TextButton>();
+		ButtonGroup<TextButton> group = new ButtonGroup<>();
 		group.setMinCheckCount(0);
 
 		for(FileHandle file : names){
@@ -262,7 +264,6 @@ public class FileChooser extends FloatingDialog {
 
 	@Override
 	public Dialog show(){
-		Platform.instance.requestWritePerms();
 		Timers.runTask(2f, () -> {
 			content().clear();
 			setupWidgets();
@@ -277,7 +278,7 @@ public class FileChooser extends FloatingDialog {
 	}
 
 	public class FileHistory{
-		private Array<FileHandle> history = new Array<FileHandle>();
+		private Array<FileHandle> history = new Array<>();
 		private int index;
 
 		public FileHistory(){
@@ -332,6 +333,7 @@ public class FileChooser extends FloatingDialog {
 	}
 
 	public static Predicate<FileHandle> pngFilter = file -> file.extension().equalsIgnoreCase("png");
+	public static Predicate<FileHandle> mapFilter = file -> file.extension().equalsIgnoreCase(Vars.mapExtension);
 	public static Predicate<FileHandle> jpegFilter = file -> file.extension().equalsIgnoreCase("png") || file.extension().equalsIgnoreCase("jpg") || file.extension().equalsIgnoreCase("jpeg");
 	public static Predicate<FileHandle> defaultFilter = file -> true;
 }

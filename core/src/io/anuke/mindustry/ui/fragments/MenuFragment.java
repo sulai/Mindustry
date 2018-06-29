@@ -6,16 +6,16 @@ import io.anuke.mindustry.core.Platform;
 import io.anuke.mindustry.io.Version;
 import io.anuke.mindustry.ui.MenuButton;
 import io.anuke.mindustry.ui.dialogs.FloatingDialog;
+import io.anuke.ucore.scene.Group;
 import io.anuke.ucore.scene.builders.imagebutton;
 import io.anuke.ucore.scene.builders.label;
 import io.anuke.ucore.scene.builders.table;
-import io.anuke.ucore.util.OS;
 
 import static io.anuke.mindustry.Vars.*;
 
 public class MenuFragment implements Fragment{
 	
-	public void build(){
+	public void build(Group parent){
 		new table(){{
 			visible(() -> state.is(State.menu));
 
@@ -31,27 +31,15 @@ public class MenuFragment implements Fragment{
 
 					row();
 
-					add(new MenuButton("icon-editor", "$text.editor", () -> {
-						if(gwt){
-							ui.showInfo("$text.editor.web");
-						}else{
-							ui.editor.show();
-						}
-					}));
-					
-					add(new MenuButton("icon-tools", "$text.settings", ui.settings::show));
+					add(new MenuButton("icon-editor", "$text.editor", () -> ui.loadAnd(ui.editor::show)));
+
+					add(new MenuButton("icon-menu", "$text.maps", ui.maps::show));
 
 					row();
 
 					add(new MenuButton("icon-info", "$text.about.button", ui.about::show));
 
-					add(new MenuButton("icon-menu", OS.isMac ? "$text.credits" : "$text.changelog.title", () -> {
-						if(OS.isMac){
-							ui.about.showCredits();
-						}else {
-							ui.changelog.show();
-						}
-					}));
+					add(new MenuButton("icon-tools", "$text.settings", ui.settings::show));
 
 					row();
 					
@@ -70,7 +58,8 @@ public class MenuFragment implements Fragment{
 
 					new imagebutton("icon-play-2", isize, ui.levels::show).text("$text.play").padTop(4f);
 
-					new imagebutton("icon-tutorial", isize, () -> control.playMap(world.maps().getMap("tutorial"))).text("$text.tutorial").padTop(4f);
+					new imagebutton("icon-tutorial", isize, () -> ui.showInfo("The tutorial is currently not yet implemented."))
+							.text("$text.tutorial").padTop(4f);
 
 					new imagebutton("icon-load", isize, ui.load::show).text("$text.load").padTop(4f);
 
@@ -82,7 +71,7 @@ public class MenuFragment implements Fragment{
 
                         defaults().size(size).pad(5);
 
-                        new imagebutton("icon-editor", isize, ui.editor::show).text("$text.editor").padTop(4f);
+                        new imagebutton("icon-editor", isize, () -> ui.loadAnd(ui.editor::show)).text("$text.editor").padTop(4f);
 
                         new imagebutton("icon-tools", isize, ui.settings::show).text("$text.settings").padTop(4f);
 
@@ -135,10 +124,8 @@ public class MenuFragment implements Fragment{
 				ui.showInfo("$text.multiplayer.web");
 			}
 		}));
-		dialog.content().add(new MenuButton("icon-tutorial", "$text.tutorial", ()-> {
-			control.playMap(world.maps().getMap("tutorial"));
-			dialog.hide();
-		}));
+
+		dialog.content().add(new MenuButton("icon-tutorial", "$text.tutorial", ()-> ui.showInfo("The tutorial is currently not yet implemented.")));
 
 		dialog.content().row();
 

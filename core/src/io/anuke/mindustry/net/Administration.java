@@ -2,37 +2,33 @@ package io.anuke.mindustry.net;
 
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.IntMap;
-import com.badlogic.gdx.utils.Json;
 import com.badlogic.gdx.utils.ObjectMap;
 import com.badlogic.gdx.utils.TimeUtils;
 import io.anuke.mindustry.entities.Player;
 import io.anuke.mindustry.world.Block;
-import io.anuke.mindustry.world.Placement;
-import io.anuke.mindustry.world.blocks.types.BlockPart;
-import io.anuke.mindustry.world.blocks.types.Floor;
-import io.anuke.mindustry.world.blocks.types.Rock;
-import io.anuke.mindustry.world.blocks.types.StaticBlock;
+import io.anuke.mindustry.world.blocks.BlockPart;
+import io.anuke.mindustry.world.blocks.Floor;
+import io.anuke.mindustry.world.blocks.Rock;
+import io.anuke.mindustry.world.blocks.StaticBlock;
 import io.anuke.ucore.core.Settings;
+
 import static io.anuke.mindustry.Vars.world;
 
 public class Administration {
     public static final int defaultMaxBrokenBlocks = 15;
     public static final int defaultBreakCooldown = 1000*15;
 
-    private Json json = new Json();
     /**All player info. Maps UUIDs to info. This persists throughout restarts.*/
     private ObjectMap<String, PlayerInfo> playerInfo = new ObjectMap<>();
     /**Maps UUIDs to trace infos. This is wiped when a player logs off.*/
     private ObjectMap<String, TraceInfo> traceInfo = new ObjectMap<>();
     /**Maps packed coordinates to logs for that coordinate */
     private IntMap<Array<EditLog>> editLogs = new IntMap<>();
-    
+
     private Array<String> bannedIPs = new Array<>();
 
     public Administration(){
         Settings.defaultList(
-            "playerInfo", "{}",
-            "bannedIPs", "{}",
             "antigrief", false,
             "antigrief-max", defaultMaxBrokenBlocks,
             "antigrief-cooldown", defaultBreakCooldown
@@ -63,7 +59,7 @@ public class Administration {
     public IntMap<Array<EditLog>> getEditLogs() {
         return editLogs;
     }
-    
+
     public void logEdit(int x, int y, Player player, Block block, int rotation, EditLog.EditAction action) {
     	if(block instanceof BlockPart || block instanceof Rock || block instanceof Floor || block instanceof StaticBlock) return;
     	if(editLogs.containsKey(x + y * world.width())) {
@@ -75,44 +71,47 @@ public class Administration {
 			editLogs.put(x + y * world.width(), logs);
 		}
     }
-    
+
+    /*
     public void rollbackWorld(int rollbackTimes) {
         for(IntMap.Entry<Array<EditLog>> editLog : editLogs.entries()) {
             int coords = editLog.key;
             Array<EditLog> logs = editLog.value;
-        
+
             for(int i = 0; i < rollbackTimes; i++) {
-            
+
                 EditLog log = logs.get(logs.size - 1);
-            
+
                 int x = coords % world.width();
                 int y = coords / world.width();
                 Block result = log.block;
                 int rotation = log.rotation;
-            
+
+                //TODO fix this mess, broken with 4.0
+
                 if(log.action == EditLog.EditAction.PLACE) {
-                    Placement.breakBlock(x, y, false, false);
-                
+                   // Build.breakBlock(x, y, false, false);
+
                     Packets.BreakPacket packet = new Packets.BreakPacket();
                     packet.x = (short) x;
                     packet.y = (short) y;
                     packet.playerid = 0;
-                
+
                     Net.send(packet, Net.SendMode.tcp);
                 }
                 else if(log.action == EditLog.EditAction.BREAK) {
-                    Placement.placeBlock(x, y, result, rotation, false, false);
-                
+                    //Build.placeBlock(x, y, result, rotation, false, false);
+
                     Packets.PlacePacket packet = new Packets.PlacePacket();
                     packet.x = (short) x;
                     packet.y = (short) y;
                     packet.rotation = (byte) rotation;
                     packet.playerid = 0;
-                    packet.block = result.id;
-                
+                    //packet.block = result.id;
+
                     Net.send(packet, Net.SendMode.tcp);
                 }
-            
+
                 logs.removeIndex(logs.size - 1);
                 if(logs.size == 0) {
                     editLogs.remove(coords);
@@ -120,8 +119,8 @@ public class Administration {
                 }
             }
         }
-    }
-    
+    }*/
+
     public boolean validateBreak(String id, String ip){
         if(!isAntiGrief() || isAdmin(id, ip)) return true;
 
@@ -169,10 +168,10 @@ public class Administration {
     }
 
     /**Returns trace info by IP.*/
-    public TraceInfo getTrace(String ip){
-        if(!traceInfo.containsKey(ip)) traceInfo.put(ip, new TraceInfo(ip));
+    public TraceInfo getTraceByID(String uuid){
+        if(!traceInfo.containsKey(uuid)) traceInfo.put(uuid, new TraceInfo(uuid));
 
-        return traceInfo.get(ip);
+        return traceInfo.get(uuid);
     }
 
     public void clearTraces(){
@@ -271,13 +270,13 @@ public class Administration {
     }
 
     /**Makes a player an admin. Returns whether this player was already an admin.*/
-    public boolean adminPlayer(String id, String ip){
+    public boolean adminPlayer(String id, String usid){
         PlayerInfo info = getCreateInfo(id);
 
         if(info.admin)
             return false;
 
-        info.validAdminIP = ip;
+        info.adminUsid = usid;
         info.admin = true;
         save();
 
@@ -305,9 +304,9 @@ public class Administration {
         return getCreateInfo(uuid).banned;
     }
 
-    public boolean isAdmin(String id, String ip){
+    public boolean isAdmin(String id, String usip){
         PlayerInfo info = getCreateInfo(id);
-        return info.admin && ip.equals(info.validAdminIP);
+        return info.admin && usip.equals(info.adminUsid);
     }
 
     public Array<PlayerInfo> findByName(String name, boolean last){
@@ -363,23 +362,23 @@ public class Administration {
     }
 
     public void save(){
-        Settings.putString("playerInfo", json.toJson(playerInfo));
-        Settings.putString("bannedIPs", json.toJson(bannedIPs));
+        Settings.putJson("player-info", playerInfo);
+        Settings.putJson("banned-ips", bannedIPs);
         Settings.save();
     }
 
     private void load(){
-        playerInfo = json.fromJson(ObjectMap.class, Settings.getString("playerInfo"));
-        bannedIPs = json.fromJson(Array.class, Settings.getString("bannedIPs"));
+        playerInfo = Settings.getJson("player-info", ObjectMap.class);
+        bannedIPs = Settings.getJson("banned-ips", Array.class);
     }
 
     public static class PlayerInfo{
         public String id;
         public String lastName = "<unknown>", lastIP = "<unknown>";
-        public String validAdminIP;
         public Array<String> ips = new Array<>();
         public Array<String> names = new Array<>();
-        public int timesKicked; //TODO not implemented!
+        public String adminUsid;
+        public int timesKicked;
         public int timesJoined;
         public int totalBlockPlaced;
         public int totalBlocksBroken;

@@ -5,9 +5,9 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.TimeUtils;
 import io.anuke.ucore.core.Timers;
 import io.anuke.ucore.entities.Entities;
-import io.anuke.ucore.entities.Entity;
 import io.anuke.ucore.entities.EntityGroup;
 import io.anuke.ucore.entities.EntityGroup.ArrayContainer;
+import io.anuke.ucore.entities.trait.Entity;
 import io.anuke.ucore.util.Log;
 
 import static io.anuke.mindustry.Vars.control;
@@ -43,12 +43,30 @@ public class ThreadHandler {
         }
     }
 
-    public int getFPS(){
+    public void runGraphics(Runnable r){
+        if(enabled) {
+            Gdx.app.postRunnable(r);
+        }else{
+            r.run();
+        }
+    }
+
+    public void runDelay(Runnable r){
+        if(enabled) {
+            synchronized (toRun) {
+                toRun.add(r);
+            }
+        }else{
+            Gdx.app.postRunnable(r);
+        }
+    }
+
+    public int getTPS(){
         return (int)(60/delta);
     }
 
     public long getFrameID(){
-        return frame;
+        return enabled ? frame : Gdx.graphics.getFrameId();
     }
 
     public float getFramesSinceUpdate(){
@@ -93,10 +111,18 @@ public class ThreadHandler {
         return enabled;
     }
 
+    public boolean doInterpolate(){
+        return enabled && Math.abs(Gdx.graphics.getFramesPerSecond() - getTPS()) > 15;
+    }
+
+    public boolean isOnThread(){
+        return impl.isOnThread();
+    }
+
     private void runLogic(){
         try {
             while (true) {
-                long time = TimeUtils.millis();
+                long time = TimeUtils.nanoTime();
 
                 synchronized (toRun) {
                     for(Runnable r : toRun){
@@ -105,10 +131,12 @@ public class ThreadHandler {
                     toRun.clear();
                 }
 
+                logic.doUpdate = true;
                 logic.update();
+                logic.doUpdate = false;
 
-                long elapsed = TimeUtils.timeSinceMillis(time);
-                long target = (long) (1000 / 60f);
+                long elapsed = TimeUtils.nanosToMillis(TimeUtils.timeSinceNanos(time));
+                long target = (long) ((1000) / 60f);
 
                 delta = Math.max(elapsed, target) / 1000f * 60f;
 

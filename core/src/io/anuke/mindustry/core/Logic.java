@@ -1,26 +1,26 @@
 package io.anuke.mindustry.core;
 
-import com.badlogic.gdx.utils.Array;
+import io.anuke.mindustry.Vars;
+import io.anuke.mindustry.content.Items;
 import io.anuke.mindustry.core.GameState.State;
-import io.anuke.mindustry.entities.enemies.Enemy;
-import io.anuke.mindustry.game.EnemySpawn;
+import io.anuke.mindustry.entities.TileEntity;
 import io.anuke.mindustry.game.EventType.GameOverEvent;
 import io.anuke.mindustry.game.EventType.PlayEvent;
 import io.anuke.mindustry.game.EventType.ResetEvent;
 import io.anuke.mindustry.game.EventType.WaveEvent;
-import io.anuke.mindustry.game.SpawnPoint;
-import io.anuke.mindustry.game.WaveCreator;
-import io.anuke.mindustry.graphics.Fx;
+import io.anuke.mindustry.game.Team;
+import io.anuke.mindustry.game.TeamInfo;
+import io.anuke.mindustry.game.TeamInfo.TeamData;
 import io.anuke.mindustry.net.Net;
-import io.anuke.mindustry.net.NetEvents;
+import io.anuke.mindustry.type.Item;
+import io.anuke.mindustry.type.ItemType;
 import io.anuke.mindustry.world.Tile;
-import io.anuke.mindustry.world.blocks.ProductionBlocks;
-import io.anuke.ucore.core.Effects;
 import io.anuke.ucore.core.Events;
 import io.anuke.ucore.core.Timers;
 import io.anuke.ucore.entities.Entities;
+import io.anuke.ucore.entities.EntityGroup;
+import io.anuke.ucore.entities.EntityPhysics;
 import io.anuke.ucore.modules.Module;
-import io.anuke.ucore.util.Mathf;
 
 import static io.anuke.mindustry.Vars.*;
 
@@ -29,23 +29,41 @@ import static io.anuke.mindustry.Vars.*;
  * Handles game state events.
  * Does not store any game state itself.
  *
- * This class should <i>not</i> call any outside methods to change state of modules, but instead fire events.
- */
+ * This class should <i>not</i> call any outside methods to change state of modules, but instead fire events.*/
 public class Logic extends Module {
-    private final Array<EnemySpawn> spawns = WaveCreator.getSpawns();
+    public boolean doUpdate = true;
+
+    public Logic(){
+        state = new GameState();
+    }
 
     @Override
     public void init(){
-        Entities.initPhysics();
-        Entities.collisions().setCollider(tilesize, world::solid);
+        EntityPhysics.initPhysics();
+        EntityPhysics.collisions().setCollider(tilesize, world::solid);
     }
 
     public void play(){
+        state.set(State.playing);
         state.wavetime = wavespace * state.difficulty.timeScaling * 2;
 
-        if(state.mode.infiniteResources){
-            state.inventory.fill();
+        //fill inventory with items for debugging
+
+        for (TeamData team : state.teams.getTeams()) {
+            for (Tile tile : team.cores) {
+                if(debug) {
+                    for (Item item : Item.all()) {
+                        if (item.type == ItemType.material) {
+                            tile.entity.items.addItem(item, 1000);
+                        }
+                    }
+                }else{
+                    tile.entity.items.addItem(Items.tungsten, 50);
+                    tile.entity.items.addItem(Items.lead, 20);
+                }
+            }
         }
+
 
         Events.fire(PlayEvent.class);
     }
@@ -55,50 +73,20 @@ public class Logic extends Module {
         state.extrawavetime = maxwavespace * state.difficulty.maxTimeScaling;
         state.wavetime = wavespace * state.difficulty.timeScaling;
         state.enemies = 0;
-        state.lastUpdated = -1;
         state.gameOver = false;
-        state.inventory.clearItems();
+        state.teams = new TeamInfo();
+        state.teams.add(Team.blue, true);
+        state.teams.add(Team.red, false);
 
         Timers.clear();
         Entities.clear();
+        TileEntity.sleepingEntities = 0;
 
         Events.fire(ResetEvent.class);
     }
 
     public void runWave(){
-
-        if(state.lastUpdated < state.wave + 1){
-            world.pathfinder().resetPaths();
-            state.lastUpdated = state.wave + 1;
-        }
-
-        for(EnemySpawn spawn : spawns){
-            Array<SpawnPoint> spawns = world.getSpawns();
-
-            for(int lane = 0; lane < spawns.size; lane ++){
-                int fl = lane;
-                Tile tile = spawns.get(lane).start;
-                int spawnamount = spawn.evaluate(state.wave, lane);
-
-                for(int i = 0; i < spawnamount; i ++){
-                    float range = 12f;
-
-                    Timers.runTask(i*5f, () -> {
-
-                        Enemy enemy = new Enemy(spawn.type);
-                        enemy.set(tile.worldx() + Mathf.range(range), tile.worldy() + Mathf.range(range));
-                        enemy.lane = fl;
-                        enemy.tier = spawn.tier(state.wave, fl);
-                        enemy.add();
-
-                        Effects.effect(Fx.spawn, enemy);
-
-                        state.enemies ++;
-                    });
-                }
-            }
-        }
-
+        state.spawner.spawnEnemies();
         state.wave ++;
         state.wavetime = wavespace * state.difficulty.timeScaling;
         state.extrawavetime = maxwavespace * state.difficulty.maxTimeScaling;
@@ -106,25 +94,39 @@ public class Logic extends Module {
         Events.fire(WaveEvent.class);
     }
 
+    private void checkGameOver(){
+        boolean gameOver = true;
+
+        for(TeamData data : state.teams.getTeams(true)){
+            if(data.cores.size > 0){
+                gameOver = false;
+                break;
+            }
+        }
+
+        if(gameOver && !state.gameOver){
+            state.gameOver = true;
+            Events.fire(GameOverEvent.class);
+        }
+    }
+
     @Override
     public void update(){
+        if(threads.isEnabled() && !threads.isOnThread()) return;
+
+        if(Vars.control != null){
+            control.runUpdateLogic();
+        }
 
         if(!state.is(State.menu)){
 
-            if(control != null) control.triggerInputUpdate();
+            if(control != null) control.triggerUpdateInput();
 
             if(!state.is(State.paused) || Net.active()){
                 Timers.update();
             }
 
-            if(!Net.client())
-                world.pathfinder().update();
-
-            if(world.getCore() != null && world.getCore().block() != ProductionBlocks.core && !state.gameOver){
-                state.gameOver = true;
-                if(Net.server()) NetEvents.handleGameOver();
-                Events.fire(GameOverEvent.class);
-            }
+            checkGameOver();
 
             if(!state.is(State.paused) || Net.active()){
 
@@ -132,12 +134,7 @@ public class Logic extends Module {
 
                     if(state.enemies <= 0){
                         if(!world.getMap().name.equals("tutorial")) state.wavetime -= Timers.delta();
-
-                        if(state.lastUpdated < state.wave + 1 && state.wavetime < aheadPathfinding){ //start updating beforehand
-                            world.pathfinder().resetPaths();
-                            state.lastUpdated = state.wave + 1;
-                        }
-                    }else if(!world.getMap().name.equals("tutorial")){
+                    }else{
                         state.extrawavetime -= Timers.delta();
                     }
                 }
@@ -146,15 +143,41 @@ public class Logic extends Module {
                     runWave();
                 }
 
-                Entities.update(Entities.defaultGroup());
+                if(!Entities.defaultGroup().isEmpty()) throw new RuntimeException("Do not add anything to the default group!");
+
                 Entities.update(bulletGroup);
-                Entities.update(enemyGroup);
+                for(EntityGroup group : unitGroups){
+                    Entities.update(group);
+                }
+                Entities.update(puddleGroup);
                 Entities.update(tileGroup);
+                Entities.update(fireGroup);
                 Entities.update(shieldGroup);
                 Entities.update(playerGroup);
+                Entities.update(itemGroup);
 
-                Entities.collideGroups(bulletGroup, enemyGroup);
-                Entities.collideGroups(bulletGroup, playerGroup);
+                //effect group only contains item drops in the headless version, update it!
+                if(headless){
+                    Entities.update(effectGroup);
+                }
+
+                for(EntityGroup group : unitGroups){
+                    if(!group.isEmpty()){
+                        EntityPhysics.collideGroups(bulletGroup, group);
+
+                        /*
+                        for(EntityGroup other : unitGroups){
+                            if(!other.isEmpty()){
+                                EntityPhysics.collideGroups(group, other);
+                            }
+                        }*/
+                    }
+                }
+
+                EntityPhysics.collideGroups(bulletGroup, playerGroup);
+                EntityPhysics.collideGroups(itemGroup, playerGroup);
+
+                world.pathfinder().update();
             }
         }
     }

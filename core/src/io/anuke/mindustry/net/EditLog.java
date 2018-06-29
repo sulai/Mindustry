@@ -1,6 +1,5 @@
 package io.anuke.mindustry.net;
 
-import io.anuke.mindustry.entities.Player;
 import io.anuke.mindustry.world.Block;
 
 public class EditLog {
@@ -16,11 +15,7 @@ public class EditLog {
 		this.action = action;
 	}
 	
-	public String info() {
-		return String.format("Player: %s, Block: %s, Rotation: %s, Edit Action: %s", playername, block.name(), rotation, action.toString());
-	}
-	
 	public enum EditAction {
-		PLACE, BREAK;
-	}
+		PLACE, BREAK
+    }
 }

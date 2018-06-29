@@ -1,9 +1,9 @@
 package io.anuke.mindustry.desktop;
 
 import io.anuke.mindustry.net.Net;
+import io.anuke.ucore.core.Settings;
 import io.anuke.ucore.util.Strings;
 
-import javax.swing.*;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -26,8 +26,20 @@ public class CrashHandler {
         //don't create crash logs for me (anuke), as it's expected
         if(System.getProperty("user.name").equals("anuke")) return;
 
+        String header = "";
+
+        try{
+            header += "--GAME INFO-- \n";
+            header += "Multithreading: " + Settings.getBool("multithread")+ "\n";
+            header += "Net Active: " + Net.active()+ "\n";
+            header += "Net Server: " + Net.server()+ "\n";
+            header += "OS: " + System.getProperty("os.name")+ "\n----\n";
+        }catch (Throwable e4){
+            e4.printStackTrace();
+        }
+
         //parse exception
-        String result = Strings.parseException(e, true);
+        String result = header + Strings.parseFullException(e);
         boolean failed = false;
 
         String filename = "";
@@ -42,7 +54,7 @@ public class CrashHandler {
         }
 
         try{
-            JOptionPane.showMessageDialog(null, "An error has occured: \n" + result + "\n\n" +
+            javax.swing.JOptionPane.showMessageDialog(null, "An error has occured: \n" + result + "\n\n" +
                 (!failed ? "A crash report has been written to " + new File(filename).getAbsolutePath() + ".\nPlease send this file to the developer!"
                         : "Failed to generate crash report.\nPlease send an image of this crash log to the developer!"));
         }catch (Throwable i){

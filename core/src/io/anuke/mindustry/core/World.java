@@ -2,70 +2,59 @@ package io.anuke.mindustry.core;
 
 import com.badlogic.gdx.math.GridPoint2;
 import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
-import io.anuke.mindustry.ai.Pathfind;
-import io.anuke.mindustry.entities.TileEntity;
-import io.anuke.mindustry.game.SpawnPoint;
-import io.anuke.mindustry.io.Maps;
-import io.anuke.mindustry.world.*;
-import io.anuke.mindustry.world.blocks.Blocks;
-import io.anuke.mindustry.world.blocks.DistributionBlocks;
-import io.anuke.mindustry.world.blocks.ProductionBlocks;
-import io.anuke.mindustry.world.blocks.WeaponBlocks;
-import io.anuke.ucore.entities.Entities;
-import io.anuke.ucore.entities.Entity;
+import com.badlogic.gdx.utils.ObjectMap;
+import io.anuke.mindustry.ai.BlockIndexer;
+import io.anuke.mindustry.ai.Pathfinder;
+import io.anuke.mindustry.content.blocks.Blocks;
+import io.anuke.mindustry.game.EventType.TileChangeEvent;
+import io.anuke.mindustry.game.EventType.WorldLoadEvent;
+import io.anuke.mindustry.io.*;
+import io.anuke.mindustry.world.Block;
+import io.anuke.mindustry.world.Tile;
+import io.anuke.mindustry.world.mapgen.WorldGenerator;
+import io.anuke.ucore.core.Events;
+import io.anuke.ucore.core.Timers;
+import io.anuke.ucore.entities.EntityPhysics;
 import io.anuke.ucore.modules.Module;
+import io.anuke.ucore.util.Log;
 import io.anuke.ucore.util.Mathf;
+import io.anuke.ucore.util.ThreadArray;
 import io.anuke.ucore.util.Tmp;
 
-import static io.anuke.mindustry.Vars.control;
-import static io.anuke.mindustry.Vars.tilesize;
+import static io.anuke.mindustry.Vars.*;
 
 public class World extends Module{
 	private int seed;
 	
 	private Map currentMap;
 	private Tile[][] tiles;
-	private Pathfind pathfind = new Pathfind();
+	private Pathfinder pathfinder = new Pathfinder();
+	private BlockIndexer indexer = new BlockIndexer();
 	private Maps maps = new Maps();
-	private Tile core;
-	private Array<SpawnPoint> spawns = new Array<>();
 
-	private Tile[] temptiles = new Tile[4];
+	private Array<Tile> tempTiles = new ThreadArray<>();
+	private boolean generating;
 	
 	public World(){
-		maps.loadMaps();
-		currentMap = maps.getMap(0);
+		maps.load();
 	}
 	
 	@Override
 	public void dispose(){
 		maps.dispose();
 	}
-
-	public Array<SpawnPoint> getSpawns(){
-		return spawns;
-	}
-
-	public Tile getCore(){
-		return core;
-	}
 	
 	public Maps maps(){
 		return maps;
 	}
-	
-	public Pathfind pathfinder(){
-		return pathfind;
+
+	public BlockIndexer indexer() {
+		return indexer;
 	}
 
-	public float getSpawnX(){
-		return core.worldx();
-	}
-
-	public float getSpawnY(){
-		return core.worldy() - tilesize*2;
+	public Pathfinder pathfinder(){
+		return pathfinder;
 	}
 	
 	public boolean solid(int x, int y){
@@ -89,11 +78,6 @@ public class World extends Module{
 		return !wallSolid(x, y-1) || !wallSolid(x, y+1) || !wallSolid(x-1, y) ||!wallSolid(x+1, y);
 	}
 	
-	public boolean blends(Block block, int x, int y){
-		return !floorBlends(x, y-1, block) || !floorBlends(x, y+1, block) 
-				|| !floorBlends(x-1, y, block) ||!floorBlends(x+1, y, block);
-	}
-	
 	public boolean floorBlends(int x, int y, Block block){
 		Tile tile = tile(x, y);
 		return tile == null || tile.floor().id <= block.id;
@@ -104,15 +88,15 @@ public class World extends Module{
 	}
 	
 	public int width(){
-		return currentMap.getWidth();
+		return tiles.length;
 	}
 	
 	public int height(){
-		return currentMap.getHeight();
+		return tiles[0].length;
 	}
 
 	public Tile tile(int packed){
-		return tile(packed % width(), packed / width());
+		return tiles == null ? null : tile(packed % width(), packed / width());
 	}
 	
 	public Tile tile(int x, int y){
@@ -135,16 +119,6 @@ public class World extends Module{
 		return tiles;
 	}
 	
-	private void createTiles(){
-		for(int x = 0; x < tiles.length; x ++){
-			for(int y = 0; y < tiles[0].length; y ++){
-				if(tiles[x][y] == null){
-					tiles[x][y] = new Tile(x, y, Blocks.stone);
-				}
-			}
-		}
-	}
-	
 	private void clearTileEntities(){
 		for(int x = 0; x < tiles.length; x ++){
 			for(int y = 0; y < tiles[0].length; y ++){
@@ -154,86 +128,105 @@ public class World extends Module{
 			}
 		}
 	}
+
+	/**Resizes the tile array to the specified size and returns the resulting tile array.
+     * Only use for loading saves!*/
+    public Tile[][] createTiles(int width, int height){
+        if(tiles != null){
+            clearTileEntities();
+
+            if(tiles.length != width || tiles[0].length != height){
+                tiles = new Tile[width][height];
+            }
+        }else{
+            tiles = new Tile[width][height];
+        }
+
+        return tiles;
+    }
+
+	/**Call to signify the beginning of map loading.
+	 * TileChangeEvents will not be fired until endMapLoad().*/
+	public void beginMapLoad(){
+    	generating = true;
+	}
+
+	/**Call to signify the end of map loading. Updates tile occlusions and sets up physics for the world.
+	 * A WorldLoadEvent will be fire.*/
+	public void endMapLoad(){
+		for(int x = 0; x < tiles.length; x ++) {
+			for (int y = 0; y < tiles[0].length; y++) {
+				tiles[x][y].updateOcclusion();
+			}
+		}
+
+		EntityPhysics.resizeTree(0, 0, tiles.length * tilesize, tiles[0].length * tilesize);
+
+    	generating = false;
+		Events.fire(WorldLoadEvent.class);
+	}
+
+	/**Loads up a procedural map. This does not call play(), but calls reset().*/
+	public void loadProceduralMap(){
+		Timers.mark();
+		Timers.mark();
+
+		logic.reset();
+
+		beginMapLoad();
+
+		int width = 400, height = 400;
+
+		Tile[][] tiles = createTiles(width, height);
+
+		Map map = new Map("Generated Map", new MapMeta(0, new ObjectMap<>(), width, height, null), true, () -> null);
+		setMap(map);
+
+		EntityPhysics.resizeTree(0, 0, width * tilesize, height * tilesize);
+
+		Timers.mark();
+		WorldGenerator.generateMap(tiles, Mathf.random(9999999));
+		Log.info("Time to generate base map: {0}", Timers.elapsed());
+
+		Log.info("Time to generate fully without additional events: {0}", Timers.elapsed());
+
+		endMapLoad();
+
+		Log.info("Full time to generate: {0}", Timers.elapsed());
+	}
+
+    public void setMap(Map map){
+    	this.currentMap = map;
+	}
 	
 	public void loadMap(Map map){
-		loadMap(map, MathUtils.random(0, 99999));
+		loadMap(map, MathUtils.random(0, 999999));
 	}
 	
 	public void loadMap(Map map, int seed){
-		currentMap = map;
-		
-		if(tiles != null){
-			clearTileEntities();
-			
-			if(tiles.length != map.getWidth() || tiles[0].length != map.getHeight()){
-				tiles = new Tile[map.getWidth()][map.getHeight()];
-			}
-			
-			createTiles();
-		}else{
-			tiles = new Tile[map.getWidth()][map.getHeight()];
-			
-			createTiles();
-		}
-		
-		spawns.clear();
-		
-		Entities.resizeTree(0, 0, map.getWidth() * tilesize, map.getHeight() * tilesize);
-		
+    	beginMapLoad();
+		this.currentMap = map;
 		this.seed = seed;
-		
-		core = WorldGenerator.generate(map.pixmap, tiles, spawns);
 
-		Placement.placeBlock(core.x, core.y, ProductionBlocks.core, 0, false, false);
+		int width = map.meta.width, height = map.meta.height;
+
+		createTiles(width, height);
 		
-		if(!map.name.equals("tutorial")){
-			setDefaultBlocks();
-		}else{
-			control.tutorial().setDefaultBlocks(core.x, core.y);
-		}
-		
-		pathfind.resetPaths();
+		EntityPhysics.resizeTree(0, 0, width * tilesize, height * tilesize);
+
+		WorldGenerator.loadTileData(tiles, MapIO.readTileData(map, true), map.meta.hasOreGen(), seed);
+
+		endMapLoad();
 	}
-	
-	void setDefaultBlocks(){
-		int x = core.x, y = core.y;
-		int flip = Mathf.sign(!currentMap.flipBase);
-		int fr = currentMap.flipBase ? 2 : 0;
-		
-		set(x, y-2*flip, DistributionBlocks.conveyor, 1 + fr);
-		set(x, y-3*flip, DistributionBlocks.conveyor, 1 + fr);
-		
-		for(int i = 0; i < 2; i ++){
-			int d = Mathf.sign(i-0.5f);
-			
-			set(x+2*d, y-2*flip, ProductionBlocks.stonedrill, d);
-			set(x+2*d, y-1*flip, DistributionBlocks.conveyor, 1 + fr);
-			set(x+2*d, y, DistributionBlocks.conveyor, 1 + fr);
-			set(x+2*d, y+1*flip, WeaponBlocks.doubleturret, 0 + fr);
-			
-			set(x+1*d, y-3*flip, DistributionBlocks.conveyor, 2*d);
-			set(x+2*d, y-3*flip, DistributionBlocks.conveyor, 2*d);
-			set(x+2*d, y-4*flip, DistributionBlocks.conveyor, 1 + fr);
-			set(x+2*d, y-5*flip, DistributionBlocks.conveyor, 1 + fr);
-			
-			set(x+3*d, y-5*flip, ProductionBlocks.stonedrill, 0 + fr);
-			set(x+3*d, y-4*flip, ProductionBlocks.stonedrill, 0 + fr);
-			set(x+3*d, y-3*flip, ProductionBlocks.stonedrill, 0 + fr);
-		}
-	}
-	
-	void set(int x, int y, Block type, int rot){
-		if(!Mathf.inBounds(x, y, tiles)){
-			return;
-		}
-		if(type == ProductionBlocks.stonedrill){
-			tiles[x][y].setFloor(Blocks.stone);
-		}
-		tiles[x][y].setBlock(type, rot);
-	}
-	
+
 	public int getSeed(){
 		return seed;
+	}
+
+	public void notifyChanged(Tile tile){
+    	if(!generating){
+    		threads.runDelay(() -> Events.fire(TileChangeEvent.class, tile));
+		}
 	}
 
 	public void removeBlock(Tile tile){
@@ -241,46 +234,12 @@ public class World extends Module{
 			tile.setBlock(Blocks.air);
 		}else{
 			Tile target = tile.target();
-			Array<Tile> removals = target.getLinkedTiles();
+			Array<Tile> removals = target.getLinkedTiles(tempTiles);
 			for(Tile toremove : removals){
 				//note that setting a new block automatically unlinks it
 				if(toremove != null) toremove.setBlock(Blocks.air);
 			}
 		}
-	}
-	
-	public TileEntity findTileTarget(float x, float y, Tile tile, float range, boolean damaged){
-		Entity closest = null;
-		float dst = 0;
-		
-		int rad = (int)(range/tilesize)+1;
-		int tilex = Mathf.scl2(x, tilesize);
-		int tiley = Mathf.scl2(y, tilesize);
-		
-		for(int rx = -rad; rx <= rad; rx ++){
-			for(int ry = -rad; ry <= rad; ry ++){
-				Tile other = tile(rx+tilex, ry+tiley);
-				
-				if(other != null && other.getLinked() != null){
-					other = other.getLinked();
-				}
-				
-				if(other == null || other.entity == null || (tile != null && other.entity == tile.entity)) continue;
-				
-				TileEntity e = other.entity;
-				
-				if(damaged && e.health >= e.tile.block().health)
-					continue;
-				
-				float ndst = Vector2.dst(x, y, e.x, e.y);
-				if(ndst < range && (closest == null || ndst < dst)){
-					dst = ndst;
-					closest = e;
-				}
-			}
-		}
-
-		return (TileEntity) closest;
 	}
 
 	/**Raycast, but with world coordinates.*/
@@ -289,8 +248,7 @@ public class World extends Module{
 				Mathf.scl2(x2, tilesize), Mathf.scl2(y2, tilesize));
 	}
 	
-	/**
-	 * Input is in block coordinates, not world coordinates.
+	/**Input is in block coordinates, not world coordinates.
 	 * @return null if no collisions found, block position otherwise.*/
 	public GridPoint2 raycast(int x0f, int y0f, int x1, int y1){
 		int x0 = x0f;

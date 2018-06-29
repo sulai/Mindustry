@@ -4,23 +4,20 @@ import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Base64Coder;
 import com.badlogic.gdx.utils.IntMap;
-import io.anuke.mindustry.io.versions.Save12;
-import io.anuke.mindustry.io.versions.Save13;
-import io.anuke.mindustry.io.versions.Save14;
-import io.anuke.mindustry.io.versions.Save15;
+import io.anuke.mindustry.Vars;
+import io.anuke.mindustry.io.versions.Save16;
 import io.anuke.ucore.core.Settings;
 
 import java.io.*;
+import java.util.zip.DeflaterOutputStream;
+import java.util.zip.InflaterInputStream;
 
 import static io.anuke.mindustry.Vars.*;
 
 public class SaveIO{
 	public static final IntMap<SaveFileVersion> versions = new IntMap<>();
 	public static final Array<SaveFileVersion> versionArray = Array.with(
-		new Save12(),
-		new Save13(),
-		new Save14(),
-		new Save15()
+		new Save16()
 	);
 
 	static{
@@ -50,7 +47,7 @@ public class SaveIO{
 	
 	public static void loadFromSlot(int slot){
 		if(gwt){
-			String string = Settings.getString("save-"+slot+"-data");
+			String string = Settings.getString("save-"+slot+"-data", "");
 			ByteArrayInputStream stream = new ByteArrayInputStream(Base64Coder.decode(string));
 			load(stream);
 		}else{
@@ -60,11 +57,11 @@ public class SaveIO{
 
 	public static DataInputStream getSlotStream(int slot){
 		if(gwt){
-			String string = Settings.getString("save-"+slot+"-data");
+			String string = Settings.getString("save-"+slot+"-data", "");
 			byte[] bytes = Base64Coder.decode(string);
 			return new DataInputStream(new ByteArrayInputStream(bytes));
 		}else{
-			return new DataInputStream(fileFor(slot).read());
+			return new DataInputStream(new InflaterInputStream(fileFor(slot).read()));
 		}
 	}
 	
@@ -85,8 +82,8 @@ public class SaveIO{
 		try{
 			int version = stream.readInt();
 			SaveFileVersion ver = versions.get(version);
-			SaveMeta meta = ver.getData(stream);
-			return meta.map != null;
+			ver.getData(stream);
+			return true;
 		}catch (Exception e){
 			return false;
 		}
@@ -109,7 +106,7 @@ public class SaveIO{
 	}
 	
 	public static FileHandle fileFor(int slot){
-		return saveDirectory.child(slot  + ".mins");
+		return saveDirectory.child(slot  + "." + Vars.saveExtension);
 	}
 
 	public static void write(FileHandle file){
@@ -117,11 +114,10 @@ public class SaveIO{
 	}
 
 	public static void write(OutputStream os){
-
 		DataOutputStream stream;
 		
 		try{
-			stream = new DataOutputStream(os);
+			stream = new DataOutputStream(new DeflaterOutputStream(os));
 			getVersion().write(stream);
 			stream.close();
 		}catch (Exception e){
@@ -131,12 +127,12 @@ public class SaveIO{
 
 	public static void load(FileHandle file){
 		try {
-			load(file.read());
+			load(new InflaterInputStream(file.read()));
 		}catch (RuntimeException e){
 			e.printStackTrace();
 			FileHandle backup = file.sibling(file.name() + "-backup." + file.extension());
 			if(backup.exists()){
-				load(backup.read());
+				load(new InflaterInputStream(backup.read()));
 			}
 		}
 	}

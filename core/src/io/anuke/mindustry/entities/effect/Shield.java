@@ -1,20 +1,19 @@
 package io.anuke.mindustry.entities.effect;
 
 import com.badlogic.gdx.math.Interpolation;
-import io.anuke.mindustry.entities.enemies.Enemy;
 import io.anuke.mindustry.world.Tile;
-import io.anuke.mindustry.world.blocks.types.defense.ShieldBlock;
+import io.anuke.mindustry.world.blocks.defense.ShieldBlock;
 import io.anuke.ucore.core.Timers;
-import io.anuke.ucore.entities.BulletEntity;
-import io.anuke.ucore.entities.Entities;
-import io.anuke.ucore.entities.Entity;
-import io.anuke.ucore.graphics.Draw;
+import io.anuke.ucore.entities.EntityGroup;
+import io.anuke.ucore.entities.impl.BaseEntity;
+import io.anuke.ucore.entities.trait.DrawTrait;
+import io.anuke.ucore.graphics.Fill;
 import io.anuke.ucore.util.Mathf;
 
-import static io.anuke.mindustry.Vars.bulletGroup;
 import static io.anuke.mindustry.Vars.shieldGroup;
 
-public class Shield extends Entity{
+//todo re-implement
+public class Shield extends BaseEntity implements DrawTrait {
 	public boolean active;
 	public boolean hitPlayers = false;
 	public float radius = 0f;
@@ -52,10 +51,11 @@ public class Shield extends Entity{
 		}
 		
 		ShieldBlock block = (ShieldBlock)tile.block();
-		
+
+		/*
 		Entities.getNearby(bulletGroup, x, y, block.shieldRadius * 2*uptime + 10, entity->{
 			BulletEntity bullet = (BulletEntity)entity;
-			if((bullet.owner instanceof Enemy || hitPlayers)){
+			if((bullet.owner instanceof BaseUnit || hitPlayers)){
 				
 				float dst =  entity.distanceTo(this);
 				
@@ -63,7 +63,7 @@ public class Shield extends Entity{
 					((ShieldBlock)tile.block()).handleBullet(tile, bullet);
 				}
 			}
-		});
+		});*/
 	}
 	
 	@Override
@@ -71,24 +71,23 @@ public class Shield extends Entity{
 		if(!(tile.block() instanceof ShieldBlock) || radius <= 1f){
 			return;
 		}
-		
-		float rad = drawRadius();
-		Draw.rect("circle2", x, y, rad, rad);
+
+		Fill.circle(x, y, drawRadius());
 	}
 	
 	float drawRadius(){
-		return (radius*2 + Mathf.sin(Timers.time(), 25f, 2f));
+		return (radius + Mathf.sin(Timers.time(), 25f, 1f));
 	}
 	
 	public void removeDelay(){
 		active = false;
 	}
-	
+
 	@Override
-	public Shield add(){
-		return super.add(shieldGroup);
+	public EntityGroup targetGroup() {
+		return shieldGroup;
 	}
-	
+
 	@Override
 	public void added(){
 		active = true;

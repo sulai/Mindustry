@@ -5,6 +5,7 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
 import io.anuke.mindustry.Vars;
 import io.anuke.mindustry.core.Platform;
+import io.anuke.mindustry.entities.Player;
 import io.anuke.mindustry.io.Version;
 import io.anuke.mindustry.net.Host;
 import io.anuke.mindustry.net.Net;
@@ -21,8 +22,7 @@ import io.anuke.ucore.util.Bundles;
 import io.anuke.ucore.util.Log;
 import io.anuke.ucore.util.Strings;
 
-import static io.anuke.mindustry.Vars.player;
-import static io.anuke.mindustry.Vars.ui;
+import static io.anuke.mindustry.Vars.*;
 
 public class JoinDialog extends FloatingDialog {
     Array<Server> servers = new Array<>();
@@ -187,6 +187,8 @@ public class JoinDialog extends FloatingDialog {
     }
 
     void setup(){
+        Player player = players[0];
+
         hosts.clear();
 
         hosts.add(remote).growX();
@@ -205,19 +207,19 @@ public class JoinDialog extends FloatingDialog {
             t.add("$text.name").padRight(10);
             t.addField(Settings.getString("name"), text -> {
                 if(text.isEmpty()) return;
-                Vars.player.name = text;
+                player.name = text;
                 Settings.put("name", text);
                 Settings.save();
-            }).grow().pad(8).get().setMaxLength(40);
+            }).grow().pad(8).get().setMaxLength(maxNameLength);
 
             ImageButton button = t.addImageButton("white", 40, () -> {
                 new ColorPickDialog().show(color -> {
                     player.color.set(color);
-                    Settings.putInt("color", Color.rgba8888(color));
+                    Settings.putInt("color-0", Color.rgba8888(color));
                     Settings.save();
                 });
             }).size(50f, 54f).get();
-            button.update(() -> button.getStyle().imageUpColor = player.getColor());
+            button.update(() -> button.getStyle().imageUpColor = player.color);
         }).width(w).height(70f).pad(4);
         content().row();
         content().add(pane).width(w + 34).pad(0);
@@ -271,6 +273,11 @@ public class JoinDialog extends FloatingDialog {
     void connect(String ip, int port){
         ui.loadfrag.show("$text.connecting");
 
+        ui.loadfrag.setButton(() -> {
+            ui.loadfrag.hide();
+            netClient.disconnectQuietly();
+        });
+
         Timers.runTask(2f, () -> {
             try{
                 Vars.netClient.beginConnecting();
@@ -304,39 +311,26 @@ public class JoinDialog extends FloatingDialog {
     }
 
     private void loadServers(){
-        String h = Settings.getString("servers");
-        String[] list = h.split("\\|\\|\\|");
-        for(String fname : list){
-            if(fname.isEmpty()) continue;
-            String[] split = fname.split(":");
-            String host = split[0];
-            int port = Strings.parseInt(split[1]);
-
-            if(port != Integer.MIN_VALUE) servers.add(new Server(host, port));
-        }
+        servers = Settings.getJson("server-list", Array.class);
     }
 
     private void saveServers(){
-        StringBuilder out = new StringBuilder();
-        for(Server server : servers){
-            out.append(server.ip);
-            out.append(":");
-            out.append(server.port);
-            out.append("|||");
-        }
-        Settings.putString("servers", out.toString());
+        Settings.putJson("server-list", servers);
         Settings.save();
     }
 
-    private class Server{
-        public String ip;
-        public int port;
-        public Host host;
-        public Table content;
+    static class Server{
+        String ip;
+        int port;
 
-        public Server(String ip, int port){
+        transient Host host;
+        transient Table content;
+
+        Server(String ip, int port){
             this.ip = ip;
             this.port = port;
         }
+
+        Server(){}
     }
 }

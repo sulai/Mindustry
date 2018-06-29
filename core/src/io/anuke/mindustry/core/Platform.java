@@ -4,8 +4,8 @@ import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.utils.Base64Coder;
 import io.anuke.mindustry.core.ThreadHandler.ThreadProvider;
 import io.anuke.ucore.core.Settings;
-import io.anuke.ucore.entities.Entity;
 import io.anuke.ucore.entities.EntityGroup;
+import io.anuke.ucore.entities.trait.Entity;
 import io.anuke.ucore.function.Consumer;
 import io.anuke.ucore.scene.ui.TextField;
 
@@ -37,8 +37,6 @@ public abstract class Platform {
 	public void openDonations(){}
 	/**Whether discord RPC is supported.*/
 	public boolean hasDiscord(){return true;}
-	/**Request Android permissions for writing files.*/
-	public void requestWritePerms(){}
 	/**Return the localized name for the locale. This is basically a workaround for GWT not supporting getName().*/
 	public String getLocaleName(Locale locale){
 		return locale.toString();
@@ -49,8 +47,8 @@ public abstract class Platform {
 	}
 	/**Whether debug mode is enabled.*/
 	public boolean isDebug(){return false;}
-	/**Must be 8 bytes in length.*/
-	public byte[] getUUID(){
+	/**Must be a base64 string 8 bytes in length.*/
+	public String getUUID(){
 		String uuid = Settings.getString("uuid", "");
 		if(uuid.isEmpty()){
 			byte[] result = new byte[8];
@@ -58,20 +56,22 @@ public abstract class Platform {
 			uuid = new String(Base64Coder.encode(result));
 			Settings.putString("uuid", uuid);
 			Settings.save();
-			return result;
+			return uuid;
 		}
-		return Base64Coder.decode(uuid);
+		return uuid;
 	}
 	/**Only used for iOS or android: open the share menu for a map or save.*/
 	public void shareFile(FileHandle file){}
+	/**Download a file. Only used on GWT backend.*/
+	public void downloadFile(String name, byte[] bytes){}
 
     /**Show a file chooser. Desktop only.
      *
      * @param text File chooser title text
-     * @param content Type of files to be loaded
+     * @param content Description of the type of files to be loaded
      * @param cons Selection listener
-     * @param open Whether to open or save files.
-     * @param filetype File extensions to filter.
+     * @param open Whether to open or save files
+     * @param filetype File extension to filter
      */
 	public void showFileChooser(String text, String content, Consumer<FileHandle> cons, boolean open, String filetype){}
 	/**Use the default thread provider from the kryonet module for this.*/
