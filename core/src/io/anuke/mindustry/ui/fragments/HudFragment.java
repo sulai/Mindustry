@@ -4,6 +4,8 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.Interpolation;
 import io.anuke.mindustry.core.GameState.State;
+import io.anuke.mindustry.game.Difficulty;
+import io.anuke.mindustry.game.GameMode;
 import io.anuke.mindustry.net.Net;
 import io.anuke.ucore.core.Core;
 import io.anuke.ucore.core.Inputs;
@@ -220,7 +222,10 @@ public class HudFragment implements Fragment{
 		new imagebutton("icon-play", 30f, () -> {
 			state.wavetime = 0f;
 		}).height(uheight).fillX().right().padTop(-8f).padBottom(-12f).padLeft(-15).padRight(-10).width(40f).update(l->{
-			boolean vis = state.enemies <= 0 && (Net.server() || !Net.active());
+			boolean vis = state.enemies < 100
+					&& (Net.server() || !Net.active())
+					&& !control.tutorial().active()
+					&& state.difficulty != Difficulty.purge;
 			boolean paused = state.is(State.paused) || !vis;
 			
 			l.setVisible(vis);

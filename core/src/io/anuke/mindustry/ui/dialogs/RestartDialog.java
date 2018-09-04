@@ -17,7 +17,7 @@ public class RestartDialog extends Dialog {
                 content().row();
             }
             content().add("$text.lasted").pad(12).get();
-            content().add("[accent]" + state.wave);
+            content().add("[accent]" + state.waveSurvived);
             pack();
         });
 

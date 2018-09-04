@@ -11,7 +11,8 @@ public class GameState{
 
 	public final Inventory inventory = new Inventory();
 
-	public int wave = 1;
+	public int wave = 0;
+	public int waveSurvived = 0;
 	public int lastUpdated = -1;
 	public float wavetime;
 	public float extrawavetime;

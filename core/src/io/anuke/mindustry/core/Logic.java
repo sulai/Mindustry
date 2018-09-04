@@ -3,6 +3,7 @@ package io.anuke.mindustry.core;
 import com.badlogic.gdx.utils.Array;
 import io.anuke.mindustry.core.GameState.State;
 import io.anuke.mindustry.entities.enemies.Enemy;
+import io.anuke.mindustry.game.Difficulty;
 import io.anuke.mindustry.game.EnemySpawn;
 import io.anuke.mindustry.game.EventType.GameOverEvent;
 import io.anuke.mindustry.game.EventType.PlayEvent;
@@ -51,7 +52,8 @@ public class Logic extends Module {
     }
 
     public void reset(){
-        state.wave = 1;
+        state.wave = 0;
+        state.waveSurvived = 0;
         state.extrawavetime = maxwavespace * state.difficulty.maxTimeScaling;
         state.wavetime = wavespace * state.difficulty.timeScaling;
         state.enemies = 0;
@@ -127,7 +129,11 @@ public class Logic extends Module {
             }
 
             if(!state.is(State.paused) || Net.active()){
-
+    
+                if(state.enemies <= 0 || state.difficulty == Difficulty.purge){
+                    state.waveSurvived = state.wave;
+                }
+                
                 if(!state.mode.disableWaveTimer){
 
                     if(state.enemies <= 0){
