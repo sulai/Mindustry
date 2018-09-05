@@ -45,9 +45,11 @@ public class BlocksFragment implements Fragment{
 
 			blocks = new table(){{
 
+				// list of items stored in core
 				itemtable = new Table("button");
 				itemtable.setVisible(() -> input.recipe == null && !state.mode.infiniteResources);
 
+				// block description in case a recipe is selected
 				desctable = new Table("button");
 				desctable.setVisible(() -> hoveredDescriptionRecipe != null || input.recipe != null);
 				desctable.update(() -> {
@@ -277,7 +279,10 @@ public class BlocksFragment implements Fragment{
 			
 			reqlabel.update(()->{
 				int current = state.inventory.getAmount(stack.item);
-				String text = Mathf.clamp(current, 0, stack.amount) + "/" + stack.amount;
+				String text = String.valueOf(stack.amount);
+				if(!state.mode.infiniteResources){
+					text = format(current) + "[white]/" + text;
+				}
 				
 				reqlabel.setColor(current < stack.amount ? Colors.get("missingitems") : Color.WHITE);
 				
@@ -395,10 +400,9 @@ public class BlocksFragment implements Fragment{
 		for(int i = 0; i < state.inventory.getItems().length; i ++){
 			int amount = state.inventory.getItems()[i];
 			if(amount == 0) continue;
-			String formatted = amount > 99999999 ? "inf" : format(amount);
 			Image image = new Image(Draw.hasRegion("icon-" + Item.getByID(i).name) ?
 					Draw.region("icon-" + Item.getByID(i).name) : Draw.region("blank"));
-			Label label = new Label(formatted);
+			Label label = new Label(format(amount));
 			label.setFontScale(fontscale*1.5f);
 			itemtable.add(image).size(8*3);
 			itemtable.add(label).expandX().left();
@@ -407,7 +411,9 @@ public class BlocksFragment implements Fragment{
 	}
 
 	String format(int number){
-		if(number > 1000000) {
+		if(number > 99999999) {
+			return "inf";
+		}else if(number > 1000000) {
 			return Strings.toFixed(number/1000000f, 1) + "[gray]mil";
 		}else if(number > 10000){
 			return number/1000 + "[gray]k";
