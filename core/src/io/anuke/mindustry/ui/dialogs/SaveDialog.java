@@ -27,12 +27,20 @@ public class SaveDialog extends LoadDialog{
 		}
 
 		slots.row();
-		slots.addImageTextButton("$text.save.new", "icon-add", "clear", 14*3, () ->
-			ui.showTextInput("$text.save", "$text.save.newslot", "", text -> {
-				control.getSaves().addSave(text);
+		slots.addImageTextButton("$text.save.new", "icon-add", "clear", 14*3, () -> {
+			if( mobile ) {
+				// don't ask for save game name on mobile, it is clunky to use.
+				// the user can rename the save game later if he wishes.
+				control.getSaves().addSave(Bundles.get("text.save.newslot.name"));
 				setup();
-			})
-		).fillX().margin(10f).minWidth(300f).height(70f).pad(4f).padRight(-4);
+			}
+			else {
+				ui.showTextInput("$text.save", "$text.save.newslot", "", text -> {
+					control.getSaves().addSave(text);
+					setup();
+				});
+			}
+		}).fillX().margin(10f).minWidth(300f).height(70f).pad(4f).padRight(-4);
 	}
 
 	@Override

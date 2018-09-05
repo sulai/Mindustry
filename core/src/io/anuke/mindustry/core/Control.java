@@ -279,6 +279,9 @@ public class Control extends Module{
 	public void pause(){
 		wasPaused = state.is(State.paused);
 		if(state.is(State.playing)) state.set(State.paused);
+		if( saves.shouldAutoSave() )
+			saves.saveCurrent();
+		
 	}
 
 	@Override

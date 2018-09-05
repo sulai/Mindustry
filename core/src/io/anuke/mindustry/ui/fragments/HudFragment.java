@@ -77,13 +77,21 @@ public class HudFragment implements Fragment{
 							} else {
 								ui.chatfrag.toggle();
 							}
-						} else {
+						}
+						else if( control.getSaves().getCurrent() != null && !control.getSaves().getCurrent().isAutosave() ) {
+							control.getSaves().saveCurrent();
+						}
+						else {
 							ui.settings.show();
 						}
 					}).update(i -> {
 						if (Net.active() && mobile) {
 							i.getStyle().imageUp = Core.skin.getDrawable("icon-chat");
-						} else {
+						}
+						else if( control.getSaves().getCurrent() != null && !control.getSaves().getCurrent().isAutosave() ) {
+							i.getStyle().imageUp = Core.skin.getDrawable("icon-save");
+						}
+						else {
 							i.getStyle().imageUp = Core.skin.getDrawable("icon-settings");
 						}
 					}).get();

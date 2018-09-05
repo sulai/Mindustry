@@ -9,9 +9,11 @@ import io.anuke.mindustry.game.GameMode;
 import io.anuke.mindustry.world.Map;
 import io.anuke.ucore.core.Settings;
 import io.anuke.ucore.core.Timers;
+import io.anuke.ucore.util.Bundles;
 
 import java.io.IOException;
 
+import static io.anuke.mindustry.Vars.mobile;
 import static io.anuke.mindustry.Vars.saveSlots;
 import static io.anuke.mindustry.Vars.state;
 
@@ -45,25 +47,40 @@ public class Saves {
             current = null;
         }
 
-        if(!state.is(State.menu) && !state.gameOver && current != null && current.isAutosave()){
+        if( shouldAutoSave() ){
             time += Timers.delta();
             if(time > Settings.getInt("saveinterval")*60) {
-                saving = true;
-
-                exec.submit(() -> {
-                    SaveIO.saveToSlot(current.index);
-                    current.meta = SaveIO.getData(current.index);
-                    saving = false;
-                    return true;
-                });
-
-                time = 0;
+                saveCurrent();
             }
         }else{
             time = 0;
         }
+        
+        // always save games on mobile, so when leaving the app with auto save on we can save
+		// and don't risk losing the game due to android life cycles
+        if( mobile && current==null && !state.is(State.menu) && canAddSave() ) {
+            addSave(Bundles.get("text.save.newslot.name"));
+        }
+        
     }
-
+    
+    public void saveCurrent() {
+        saving = true;
+        
+        exec.submit(() -> {
+			SaveIO.saveToSlot(current.index);
+			current.meta = SaveIO.getData(current.index);
+			saving = false;
+			return true;
+		});
+        
+        time = 0;
+    }
+    
+    public boolean shouldAutoSave() {
+        return !state.is(State.menu) && !state.gameOver && current != null && current.isAutosave();
+    }
+    
     public void resetSave(){
         current = null;
     }

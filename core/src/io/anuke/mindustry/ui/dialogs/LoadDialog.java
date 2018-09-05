@@ -51,8 +51,9 @@ public class LoadDialog extends FloatingDialog{
 		slots.marginRight(24);
 
 		Timers.runTask(2f, () -> Core.scene.setScrollFocus(pane));
-
-		Array<SaveSlot> array = control.getSaves().getSaveSlots();
+		
+		Array<SaveSlot> array = new Array<>(control.getSaves().getSaveSlots());
+		array.reverse();
 
 		for(SaveSlot slot : array){
 
