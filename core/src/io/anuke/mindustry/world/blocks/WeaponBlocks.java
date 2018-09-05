@@ -30,16 +30,18 @@ public class WeaponBlocks{
 	doubleturret = new Turret("doubleturret"){
 		{
 			range = 44;
-			reload = 13f;
+			reload = 17f;
 			bullet = BulletType.stone;
 			ammo = Item.stone;
 			health = 45;
+			bullets = 2;
 		}
 		
 		@Override
 		protected void shoot(Tile tile){
 			TurretEntity entity = tile.entity();
 
+			// shoot 2 bullets
 			for(int i : Mathf.signs){
 				tr.trns(entity.rotation, 4, -2 * i);
 				bullet(tile, entity.rotation);
@@ -64,7 +66,7 @@ public class WeaponBlocks{
 			bullet = BulletType.iron;
 			ammo = Item.iron;
 			health = 70;
-			shots = 5;
+			bullets = 5;
 			inaccuracy = 15f;
 			shotDelayScale = 0.7f;
 		}
@@ -98,9 +100,9 @@ public class WeaponBlocks{
 			shootsound = "bigshot";
 			rotatespeed = 0.2f;
 			range = 120;
-			reload = 55f;
+			reload = 50f;
 			bullet = BulletType.flak;
-			shots = 3;
+			bullets = 3;
 			inaccuracy = 9f;
 			ammo = Item.coal;
 			ammoMultiplier = 5;
@@ -166,7 +168,7 @@ public class WeaponBlocks{
 			width = height = 2;
 			shootCone = 9f;
 			ammoMultiplier = 8;
-			shots = 2;
+			bullets = 2;
 			shootEffect = Fx.chainshot;
 		}
 

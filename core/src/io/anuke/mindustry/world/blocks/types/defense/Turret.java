@@ -40,7 +40,7 @@ public class Turret extends Block{
 	protected float range = 50f;
 	protected float reload = 10f;
 	protected float inaccuracy = 0f;
-	protected int shots = 1;
+	protected int bullets = 1;
 	protected float shotDelayScale = 0;
 	protected String shootsound = "shoot";
 	protected BulletType bullet = BulletType.iron;
@@ -71,9 +71,10 @@ public class Turret extends Block{
 		if(ammo != null) list.add("[turretinfo]Ammo/Item: " + ammoMultiplier);
 		list.add("[turretinfo]Range: " + (int)range);
 		list.add("[turretinfo]Inaccuracy: " + (int)inaccuracy);
-		list.add("[turretinfo]Damage/Shot: " + bullet.damage);
 		list.add("[turretinfo]Shots/Second: " + Strings.toFixed(60f/reload, 1));
-		list.add("[turretinfo]Shots: " + shots);
+		list.add("[turretinfo]Bullets: " + bullets);
+		list.add("[turretinfo]Damage/Bullet: " + bullet.getTotalDamage());
+		list.add("[turretinfo]Damage/Second: " + Strings.toFixed(bullet.getTotalDamage()* bullets *60f/reload, 1));
 	}
 	
 	@Override
@@ -214,7 +215,7 @@ public class Turret extends Block{
 
 		tr.trns(entity.rotation, width * tilesize/2);
 		
-		for(int i = 0; i < shots; i ++){
+		for( int i = 0; i < bullets; i ++){
 			if(Mathf.zero(shotDelayScale)){
 				bullet(tile, entity.rotation + Mathf.range(inaccuracy));
 			}else{

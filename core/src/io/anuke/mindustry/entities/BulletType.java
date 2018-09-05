@@ -127,6 +127,8 @@ public abstract class BulletType extends BaseBulletType<Bullet>{
 	},
 	flak = new BulletType(2.9f, 8) {
 
+		final int sparks = 3;
+		
 		public void init(Bullet b) {
 			b.velocity.scl(Mathf.random(0.6f, 1f));
 		}
@@ -148,7 +150,7 @@ public abstract class BulletType extends BaseBulletType<Bullet>{
 
 		public void hit(Bullet b, float hitx, float hity) {
 			Effects.effect(shellsmoke, b);
-			for(int i = 0; i < 3; i ++){
+			for(int i = 0; i < sparks; i ++){
 				Bullet bullet = new Bullet(flakspark, b.owner, hitx, hity, b.angle() + Mathf.range(120f));
 				bullet.add();
 			}
@@ -157,8 +159,14 @@ public abstract class BulletType extends BaseBulletType<Bullet>{
 		public void despawned(Bullet b) {
 			hit(b, b.x, b.y);
 		}
+		
+		@Override
+		public int getTotalDamage() {
+			return super.getTotalDamage() + sparks*flakspark.damage;
+		}
+		
 	},
-	flakspark = new BulletType(2f, 2) {
+	flakspark = new BulletType(2f, 4) {
 		{
 			drag = 0.05f;
 		}
@@ -482,4 +490,9 @@ public abstract class BulletType extends BaseBulletType<Bullet>{
 	public void hit(Bullet b, float hitx, float hity){
 		Effects.effect(Fx.hit, hitx, hity);
 	}
+	
+	public int getTotalDamage() {
+		return damage;
+	}
+	
 }
