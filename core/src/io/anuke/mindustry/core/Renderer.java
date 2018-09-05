@@ -432,8 +432,8 @@ public class Renderer extends RendererModule{
 			if(input.breakMode == PlaceMode.holdDelete)
 				input.breakMode.draw(tilex, tiley, 0, 0);
 			
-		}else if(input.breakMode.delete && control.input().drawPlace()
-				&& (input.recipe == null || !state.inventory.hasItems(input.recipe.requirements))
+		}
+		else if(input.breakMode.delete && control.input().drawPlace()
 				&& (input.placeMode.delete || input.breakMode.both || !mobile)){
 
             if(input.breakMode == PlaceMode.holdDelete)
@@ -442,10 +442,10 @@ public class Renderer extends RendererModule{
 				input.breakMode.draw(control.input().getBlockX(), control.input().getBlockY(),
 						control.input().getBlockEndX(), control.input().getBlockEndY());
 		}
-
-		if(ui.toolfrag.confirming){
+		else if(input.recipe!=null && state.inventory.hasItems(input.recipe.requirements)
+				&& input.placeMode.confirm && ui.toolfrag.confirming){
 			ToolFragment t = ui.toolfrag;
-			PlaceMode.areaDelete.draw(t.px, t.py, t.px2, t.py2);
+			input.placeMode.draw(t.px, t.py, t.px2, t.py2);
 		}
 		
 		Draw.reset();

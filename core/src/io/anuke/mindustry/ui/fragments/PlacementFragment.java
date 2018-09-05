@@ -46,20 +46,25 @@ public class PlacementFragment implements Fragment{
 			ButtonGroup<ImageButton> breakGroup = new ButtonGroup<>();
 
 			update(t -> {
-				if((input.recipe == null) == placing){
+				// switch placing on or off
+				if( input.recipe != null ^ placing ) { // xor
 					float i = 0.1f;
 					Interpolation n = Interpolation.pow3Out;
 					if(input.recipe == null){
 						placing = false;
 						container.clearActions();
 						container.actions(Actions.translateBy(0, -(container.getTranslation().y + translation), i, n));
-						if (!input.lastBreakMode.both) input.placeMode = input.lastBreakMode;
+						input.placeMode = PlaceMode.none;
 					}else{
 						placing = true;
 						container.clearActions();
 						container.actions(Actions.translateBy(0, -(container.getTranslation().y), i, n));
 						input.placeMode = input.lastPlaceMode;
 					}
+					// set break mode to none to prevent switching back after deselecting recipe.
+					// this is safer to prevent accidental breaks on mobile
+					if(!input.breakMode.both)
+						input.breakMode = PlaceMode.none;
 				}
 
 				if(!input.placeMode.delete){

@@ -1,6 +1,5 @@
 package io.anuke.mindustry.input;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Colors;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
@@ -22,6 +21,7 @@ public enum PlaceMode{
 			shown = true;
 			lockCamera = true;
 			pan = true;
+			confirm = true;
 		}
 		
 		public void draw(int tilex, int tiley, int endx, int endy){
@@ -121,6 +121,7 @@ public enum PlaceMode{
 			shown = true;
 			lockCamera = true;
 			delete = true;
+			confirm = true;
 		}
 		
 		public void draw(int tilex, int tiley, int endx, int endy){
@@ -226,19 +227,16 @@ public enum PlaceMode{
 		int tiley;
 		int endx;
 		int endy;
-		int rotation;
 		
 		{
 			lockCamera = true;
 			shown = true;
 			showCancel = true;
 			showRotate = true;
+			confirm = true;
 		}
 		
 		public void draw(int tilex, int tiley, int endx, int endy){
-			if(mobile && !Gdx.input.isTouched(0) && !control.showCursor()){
-				return;
-			}
 
 			float t = tilesize;
 			Block block = control.input().recipe.result;
@@ -287,7 +285,7 @@ public enum PlaceMode{
 						//step by the block size if it's valid
 						if(control.input().validPlace(px, py, control.input().recipe.result) && state.inventory.hasItems(control.input().recipe.requirements, amount)){
 
-							renderer.getBlocks().handlePreview(control.input().recipe.result, block.rotate ? rotation * 90 : 0f, px * t + offset.x, py * t + offset.y, px, py);
+							renderer.getBlocks().handlePreview(control.input().recipe.result, block.rotate ? control.input().rotation * 90 : 0f, px * t + offset.x, py * t + offset.y, px, py);
 
 							if(isX){
 								cx += block.width;
@@ -320,7 +318,7 @@ public enum PlaceMode{
 					float cx = tx * t, cy = ty * t;
 					Lines.stroke(2f);
 					Draw.color(Colors.get("placeRotate"));
-					tr.trns(rotation * 90, 7, 0);
+					tr.trns(control.input().rotation * 90, 7, 0);
 					Lines.line(cx, cy, cx + tr.x, cy + tr.y);
 				}
 				Draw.reset();
@@ -330,7 +328,17 @@ public enum PlaceMode{
 		public void released(int tilex, int tiley, int endx, int endy){
 			process(tilex, tiley, endx, endy);
 			
-			control.input().rotation = this.rotation;
+			if(mobile && (tilex != endx || tiley != endy)) {
+				ToolFragment t = ui.toolfrag;
+				if(!t.confirming || t.px != tilex || t.py != tiley || t.px2 != endx || t.py2 != endy) {
+					t.confirming = true;
+					t.px = tilex;
+					t.py = tiley;
+					t.px2 = endx;
+					t.py2 = endy;
+					return;
+				}
+			}
 			
 			boolean first = true;
 			for(int x = 0; x <= Math.abs(this.endx - this.tilex); x ++){
@@ -360,16 +368,16 @@ public enum PlaceMode{
 				endy = Mathf.sign(endy - tiley) * maxlen + tiley;
 			}
 			
-			if(endx > tilex)
-				rotation = 0;
-			else if(endx < tilex)
-				rotation = 2;
-			else if(endy > tiley)
-				rotation = 1;
-			else if(endy < tiley)
-				rotation = 3;
-			else
-				rotation = control.input().rotation;
+			if( !ui.toolfrag.confirming ) {
+				if(endx > tilex)
+					control.input().rotation = 0;
+				else if(endx < tilex)
+					control.input().rotation = 2;
+				else if(endy > tiley)
+					control.input().rotation = 1;
+				else if(endy < tiley)
+					control.input().rotation = 3;
+			}
 			
 			if(endx < tilex){
 				int t = endx;
@@ -395,6 +403,7 @@ public enum PlaceMode{
 	public boolean showCancel;
 	public boolean delete = false;
 	public boolean both = false;
+	public boolean confirm = false;
 	
 	private static final Translator tr = new Translator();
 	

@@ -24,7 +24,7 @@ public class ToolFragment implements Fragment{
 		tools = new Table();
 		
 		tools.addImageButton("icon-cancel", isize, () -> {
-			if(input.placeMode == PlaceMode.areaDelete && confirming){
+			if(input.placeMode.confirm && confirming){
 				confirming = false;
 			}else{
 				input.recipe = null;
@@ -37,7 +37,7 @@ public class ToolFragment implements Fragment{
 		});
 		
 		tools.addImageButton("icon-check", isize, () -> {
-			if(input.placeMode == PlaceMode.areaDelete && confirming){
+			if(input.placeMode.confirm && confirming){
 				input.placeMode.released(px, py, px2, py2);
 				confirming = false;
 			}else{
@@ -48,8 +48,10 @@ public class ToolFragment implements Fragment{
 		Core.scene.add(tools);
 		
 		tools.setVisible(() ->
-			!state.is(State.menu) && mobile && ((input.recipe != null && state.inventory.hasItems(input.recipe.requirements) &&
-			input.placeMode == PlaceMode.cursor) || confirming)
+				!state.is(State.menu)
+						&& mobile
+						&& ((input.recipe != null && state.inventory.hasItems(input.recipe.requirements) &&
+						input.placeMode.confirm) || confirming)
 		);
 		
 		tools.update(() -> {
@@ -62,7 +64,7 @@ public class ToolFragment implements Fragment{
 						Gdx.graphics.getHeight() - control.input().getCursorY() - 15*Core.cameraScale, Align.top);
 			}
 
-			if(input.placeMode != PlaceMode.areaDelete){
+			if(!input.placeMode.confirm){
 				confirming = false;
 			}
 		});
