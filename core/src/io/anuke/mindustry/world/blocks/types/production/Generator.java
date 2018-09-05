@@ -137,12 +137,10 @@ public class Generator extends PowerBlock{
 		PowerEntity entity = tile.entity();
 
 		for(int i = 0; i < laserDirections; i++){
-			if(entity.power > powerSpeed){
-				Draw.alpha(1f);
-			}else{
-				Draw.alpha(0.5f);
-			}
-			drawLaserTo(tile, (tile.getRotation() + i) - laserDirections / 2);
+			Draw.alpha(0.5f);
+			drawLaserTo(tile,
+					(tile.getRotation() + i) - laserDirections / 2,
+					entity.power > powerSpeed);
 		}
 
 		Draw.color();
@@ -173,7 +171,7 @@ public class Generator extends PowerBlock{
 		}
 	}
 
-	protected void drawLaserTo(Tile tile, int rotation){
+	protected void drawLaserTo(Tile tile, int rotation, boolean satiated){
 
 		Tile target = laserTarget(tile, rotation);
 
@@ -200,7 +198,8 @@ public class Generator extends PowerBlock{
 			int relative = tile.relativeTo(target.x, target.y);
 			
 			if(relative == -1){
-				Shapes.laser("laser", "laserend", tile.worldx() + t2.x, tile.worldy() + t2.y,
+				String line = satiated ? "laser" : "laser-small";
+				Shapes.laser(line, "laserend", tile.worldx() + t2.x, tile.worldy() + t2.y,
 						target.worldx() - t1.x + Mathf.range(r),
 						target.worldy() - t1.y + Mathf.range(r), 0.7f);
 			}else{
