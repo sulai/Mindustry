@@ -6,7 +6,12 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ObjectMap;
 import com.badlogic.gdx.utils.reflect.ClassReflection;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import io.anuke.mindustry.core.GameState.State;
+import io.anuke.mindustry.core.World;
 import io.anuke.mindustry.entities.TileEntity;
 import io.anuke.mindustry.graphics.Fx;
 import io.anuke.mindustry.net.Net;
@@ -319,4 +324,15 @@ public class Block{
 	public String toString(){
 		return name;
 	}
+	
+	public List<Tile> getMultiblockTiles(World world, int x, int y) {
+		List<Tile> tiles = new ArrayList<>();
+		int offsetX = -(width-1)/2;
+		int offsetY = -(height-1)/2;
+		for(int dx = 0; dx < width; dx ++)
+			for(int dy = 0; dy < height; dy ++)
+				tiles.add(world.tile(x + dx + offsetX, y + dy + offsetY));
+		return tiles;
+	}
+	
 }

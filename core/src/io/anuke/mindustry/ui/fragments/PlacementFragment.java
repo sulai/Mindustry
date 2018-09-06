@@ -46,7 +46,7 @@ public class PlacementFragment implements Fragment{
 			ButtonGroup<ImageButton> breakGroup = new ButtonGroup<>();
 
 			update(t -> {
-				// switch placing on or off
+				// switch placing on or off by (de-) selecting recipe
 				if( input.recipe != null ^ placing ) { // xor
 					float i = 0.1f;
 					Interpolation n = Interpolation.pow3Out;

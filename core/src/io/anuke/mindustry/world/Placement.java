@@ -134,14 +134,9 @@ public class Placement {
         if(tile == null || (isSpawnPoint(tile) && (type.solidifes || type.solid))) return false;
 
         if(type.isMultiblock()){
-            int offsetx = -(type.width-1)/2;
-            int offsety = -(type.height-1)/2;
-            for(int dx = 0; dx < type.width; dx ++){
-                for(int dy = 0; dy < type.height; dy ++){
-                    Tile other = world.tile(x + dx + offsetx, y + dy + offsety);
-                    if(other == null || (other.block() != Blocks.air && !other.block().alwaysReplace) || isSpawnPoint(other)){
-                        return false;
-                    }
+            for( Tile other : type.getMultiblockTiles(world, x, y) ) {
+                if(other == null || (other.block() != Blocks.air && !other.block().alwaysReplace) || isSpawnPoint(other)){
+                    return false;
                 }
             }
             return true;

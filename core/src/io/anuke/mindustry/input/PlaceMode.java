@@ -1,11 +1,16 @@
 package io.anuke.mindustry.input;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Colors;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
-import io.anuke.mindustry.ui.fragments.ToolFragment;
+
+import io.anuke.mindustry.resource.Recipe;
 import io.anuke.mindustry.world.Block;
 import io.anuke.mindustry.world.Tile;
+import io.anuke.mindustry.world.blocks.Blocks;
+import io.anuke.ucore.core.Core;
+import io.anuke.ucore.core.Graphics;
 import io.anuke.ucore.core.Timers;
 import io.anuke.ucore.graphics.Draw;
 import io.anuke.ucore.graphics.Lines;
@@ -22,13 +27,15 @@ public enum PlaceMode{
 			lockCamera = true;
 			pan = true;
 			confirm = true;
+			confirming = true;
+			requiresRecipe = true;
 		}
 		
-		public void draw(int tilex, int tiley, int endx, int endy){
+		public void draw(){
 			float x = tilex * tilesize;
 			float y = tiley * tilesize;
 			
-			boolean valid = control.input().validPlace(tilex, tiley, control.input().recipe.result) && (mobile || control.input().cursorNear());
+			boolean valid = isValidPlace();
 			
 			Vector2 offset = control.input().recipe.result.getPlaceOffset();
 			
@@ -53,6 +60,31 @@ public enum PlaceMode{
 		
 		public void tapped(int tilex, int tiley){
 			control.input().tryPlaceBlock(tilex, tiley, true);
+		}
+		
+		@Override
+		public void setConfirming(boolean confirming) {
+			// always confirm
+			this.confirming = true;
+		}
+		
+		@Override
+		public Vector2 getToolsPosition() {
+			return new Vector2(control.input().getCursorX(),
+					Gdx.graphics.getHeight() - control.input().getCursorY() - 15* Core.cameraScale);
+		}
+		
+		@Override
+		public void onActionConfirm() {
+			if(mobile && validBreakOrNothing(tilex, tiley, control.input().recipe.result))
+				for(Tile tile : control.input().recipe.result.getMultiblockTiles(world, tilex, tiley))
+					control.input().tryDeleteBlock(tile.x, tile.y, false);
+			tapped(tilex, tiley);
+		}
+		
+		@Override
+		public void onActionCancel() {
+			control.input().recipe = null;
 		}
 	},
 	touch{
@@ -81,7 +113,7 @@ public enum PlaceMode{
 			both = true;
 		}
 		
-		public void draw(int tilex, int tiley, int endx, int endy){
+		public void draw(){
 			Tile tile = world.tile(tilex, tiley);
 			
 			if(tile != null && control.input().validBreak(tilex, tiley)){
@@ -112,10 +144,6 @@ public enum PlaceMode{
 	},
 	areaDelete{
 		int maxlen = 20;
-		int tilex;
-		int tiley;
-		int endx;
-		int endy;
 		
 		{
 			shown = true;
@@ -124,13 +152,9 @@ public enum PlaceMode{
 			confirm = true;
 		}
 		
-		public void draw(int tilex, int tiley, int endx, int endy){
+		public void draw(){
 			float t = tilesize;
 			
-			process(tilex, tiley, endx, endy);
-			
-			tilex = this.tilex; tiley = this.tiley;
-			endx = this.endx; endy = this.endy;
 			float x = this.tilex * t, y = this.tiley * t,
 					x2 = this.endx * t, y2 = this.endy * t;
 			
@@ -166,23 +190,19 @@ public enum PlaceMode{
 			Draw.reset();
 		}
 		
-		public void released(int tilex, int tiley, int endx, int endy){
-			process(tilex, tiley, endx, endy);
-			tilex = this.tilex; tiley = this.tiley;
-			endx = this.endx; endy = this.endy;
+		public void released(){
 			
 			if(mobile){
-				ToolFragment t = ui.toolfrag;
-				if(!t.confirming || t.px != tilex || t.py != tiley || t.px2 != endx || t.py2 != endy) {
-					t.confirming = true;
-					t.px = tilex;
-					t.py = tiley;
-					t.px2 = endx;
-					t.py2 = endy;
-					return;
-				}
+				confirming = true;
+			}
+			else {
+				onActionConfirm();
 			}
 			
+		}
+		
+		@Override
+		public void onActionConfirm() {
 			boolean first = true;
 			
 			for(int cx = tilex; cx <= endx; cx ++){
@@ -194,7 +214,8 @@ public enum PlaceMode{
 			}
 		}
 		
-		void process(int tilex, int tiley, int endx, int endy){
+		@Override
+		public void process(int tilex, int tiley, int endx, int endy){
 			
 			if(Math.abs(endx - tilex) > maxlen){
 				endx = Mathf.sign(endx - tilex) * maxlen + tilex;
@@ -223,10 +244,6 @@ public enum PlaceMode{
 	},
 	hold{
 		int maxlen = 20;
-		int tilex;
-		int tiley;
-		int endx;
-		int endy;
 		
 		{
 			lockCamera = true;
@@ -234,18 +251,22 @@ public enum PlaceMode{
 			showCancel = true;
 			showRotate = true;
 			confirm = true;
+			requiresRecipe = true;
 		}
 		
-		public void draw(int tilex, int tiley, int endx, int endy){
-
+		public void draw(){
+			
+			if( mobile && Gdx.input.isTouched(1) ) {
+				// always remove confirmation if second finger touches
+				confirming=false;
+				return;
+			}
+			
 			float t = tilesize;
 			Block block = control.input().recipe.result;
 			Vector2 offset = block.getPlaceOffset();
 			
-			process(tilex, tiley, endx, endy);
 			int tx = tilex, ty = tiley, ex = endx, ey = endy;
-			tilex = this.tilex; tiley = this.tiley;
-			endx = this.endx; endy = this.endy;
 			float x = this.tilex * t, y = this.tiley * t,
 					x2 = this.endx * t, y2 = this.endy * t;
 			
@@ -325,21 +346,39 @@ public enum PlaceMode{
 			}
 		}
 		
-		public void released(int tilex, int tiley, int endx, int endy){
-			process(tilex, tiley, endx, endy);
+		public void released(){
 			
-			if(mobile && (tilex != endx || tiley != endy)) {
-				ToolFragment t = ui.toolfrag;
-				if(!t.confirming || t.px != tilex || t.py != tiley || t.px2 != endx || t.py2 != endy) {
-					t.confirming = true;
-					t.px = tilex;
-					t.py = tiley;
-					t.px2 = endx;
-					t.py2 = endy;
-					return;
+			if( mobile ) {
+				// single-spot? allow to break and place in one run
+				if( !confirming && tilex==endx && tiley==endy ) { // !confirming: prevent accidental placement when trying to hit one of the tool buttons
+					if( !isValidPlace() && validBreakOrNothing(tilex, tiley, control.input().recipe.result) ) {
+						confirming = true;
+					}
+					else {
+						onActionConfirm();
+					}
+				}
+				// no single-spot
+				else {
+					confirming = true;
 				}
 			}
-			
+			// no mobile
+			else {
+				onActionConfirm();
+			}
+
+		}
+		
+		@Override
+		public void onActionConfirm() {
+			confirming=false;
+			// single-spot? allow to break and place in one run
+			if( mobile && tilex==endx && tiley==endy
+					&& validBreakOrNothing(tilex, tiley, control.input().recipe.result) ) {
+				for(Tile tile : control.input().recipe.result.getMultiblockTiles(world, tilex, tiley))
+					control.input().tryDeleteBlock(tile.x, tile.y, false);
+			}
 			boolean first = true;
 			for(int x = 0; x <= Math.abs(this.endx - this.tilex); x ++){
 				for(int y = 0; y <= Math.abs(this.endy - this.tiley); y ++){
@@ -353,32 +392,35 @@ public enum PlaceMode{
 			}
 		}
 		
-		void process(int tilex, int tiley, int endx, int endy){
+		@Override
+		public void process(int tilex, int tiley, int endx, int endy){
+			
+			// only straight lines
 			if(Math.abs(tilex - endx) > Math.abs(tiley - endy)){
 				endy = tiley;
 			}else{
 				endx = tilex;
 			}
 			
+			// length limit
 			if(Math.abs(endx - tilex) > maxlen){
 				endx = Mathf.sign(endx - tilex) * maxlen + tilex;
 			}
-			
 			if(Math.abs(endy - tiley) > maxlen){
 				endy = Mathf.sign(endy - tiley) * maxlen + tiley;
 			}
 			
-			if( !ui.toolfrag.confirming ) {
-				if(endx > tilex)
-					control.input().rotation = 0;
-				else if(endx < tilex)
-					control.input().rotation = 2;
-				else if(endy > tiley)
-					control.input().rotation = 1;
-				else if(endy < tiley)
-					control.input().rotation = 3;
-			}
+			// automatic rotation
+			if(endx > tilex)
+				control.input().rotation = 0;
+			else if(endx < tilex)
+				control.input().rotation = 2;
+			else if(endy > tiley)
+				control.input().rotation = 1;
+			else if(endy < tiley)
+				control.input().rotation = 3;
 			
+			// only one direction
 			if(endx < tilex){
 				int t = endx;
 				endx = tilex;
@@ -404,23 +446,79 @@ public enum PlaceMode{
 	public boolean delete = false;
 	public boolean both = false;
 	public boolean confirm = false;
+	protected boolean confirming = false;
+	public boolean requiresRecipe = false;
 	
 	private static final Translator tr = new Translator();
+	protected int tilex;
+	protected int tiley;
+	protected int endx;
+	protected int endy;
+	
+	public void draw() { }
 	
 	public void draw(int tilex, int tiley, int endx, int endy){
-	
+		process(tilex, tiley, endx, endy);
+		draw();
 	}
 	
 	public void released(int tilex, int tiley, int endx, int endy){
-	
+		process(tilex, tiley, endx, endy);
+		released();
 	}
 	
-	public void tapped(int x, int y){
+	public void released() { }
 	
+	protected boolean isValidPlace() {
+		return control.input().validPlace(tilex, tiley, control.input().recipe.result) && (mobile || control.input().cursorNear());
 	}
+	
+	public boolean validBreakOrNothing(int x, int y, Block type) {
+		for( Tile tile : type.getMultiblockTiles(world, x, y) ) {
+			if(tile == null || tile.block() == Blocks.air)
+				continue;
+			if( !control.input().validBreak(tile.x, tile.y) ) {
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	public void tapped(int x, int y){ }
 	
 	@Override
 	public String toString(){
 		return Bundles.get("placemode."+name().toLowerCase()+".name");
 	}
+	
+	public boolean isConfirming() {
+		if( requiresRecipe ) {
+			Recipe recipe = control.input().recipe;
+			if(recipe==null || !state.inventory.hasItems(recipe.requirements))
+				return false;
+		}
+		return confirm && confirming;
+	}
+	
+	public void setConfirming(boolean confirming) {
+		this.confirming = confirming;
+	}
+	
+	public Vector2 getToolsPosition() {
+		return Graphics.screen((tilex + endx)/2f * tilesize, Math.min(tiley, endy) * tilesize - tilesize*1.5f);
+	}
+	
+	protected void process(int tilex, int tiley, int endx, int endy) {
+		this.tilex = tilex;
+		this.tiley = tiley;
+		this.endx = endx;
+		this.endy = endy;
+	}
+	
+	public void onActionConfirm() { }
+	
+	public void onActionCancel() {
+		setConfirming(false);
+	}
+	
 }

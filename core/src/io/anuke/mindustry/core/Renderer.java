@@ -414,7 +414,7 @@ public class Renderer extends RendererModule{
 		//draw placement box
 		if((input.recipe != null && state.inventory.hasItems(input.recipe.requirements) && (!ui.hasMouse() || mobile)
 				&& control.input().drawPlace())){
-
+			
 			input.placeMode.draw(control.input().getBlockX(), control.input().getBlockY(),
 					control.input().getBlockEndX(), control.input().getBlockEndY());
 
@@ -442,10 +442,8 @@ public class Renderer extends RendererModule{
 				input.breakMode.draw(control.input().getBlockX(), control.input().getBlockY(),
 						control.input().getBlockEndX(), control.input().getBlockEndY());
 		}
-		else if(input.recipe!=null && state.inventory.hasItems(input.recipe.requirements)
-				&& input.placeMode.confirm && ui.toolfrag.confirming){
-			ToolFragment t = ui.toolfrag;
-			input.placeMode.draw(t.px, t.py, t.px2, t.py2);
+		else if(input.placeMode.isConfirming()){
+			input.placeMode.draw();
 		}
 		
 		Draw.reset();
