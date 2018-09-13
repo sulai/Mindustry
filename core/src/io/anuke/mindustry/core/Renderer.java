@@ -585,7 +585,8 @@ public class Renderer extends RendererModule{
 	}
 
 	public void clampScale(){
-		targetscale = Mathf.clamp(targetscale, Math.round(Unit.dp.scl(2)), Math.round(Unit.dp.scl((5))));
+		int min = android ? 1 : 2;
+		targetscale = Mathf.clamp(targetscale, Math.round(Unit.dp.scl(min)), Math.round(Unit.dp.scl((5))));
 	}
 
 }
