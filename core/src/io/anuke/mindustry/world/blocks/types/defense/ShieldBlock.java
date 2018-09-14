@@ -18,21 +18,18 @@ import static io.anuke.mindustry.Vars.renderer;
 
 public class ShieldBlock extends PowerBlock{
 	public float shieldRadius = 40f;
-	public float powerDrain = 0.005f;
 	public float powerPerDamage = 0.06f;
 	public float maxRadius = 40f;
 	public float radiusScale = 300f;
 	
 	public ShieldBlock(String name) {
 		super(name);
-		voltage = powerDrain;
 		powerCapacity = 80f;
 	}
 	
 	@Override
 	public void getStats(Array<String> list){
 		super.getStats(list);
-		list.add("[powerinfo]Power/second: " + Strings.toFixed(powerDrain*60, 2));
 		list.add("[powerinfo]Power Drain/damage: " + Strings.toFixed(powerPerDamage, 2));
 		list.add("[powerinfo]Shield Radius: " + (int)shieldRadius);
 	}
@@ -51,8 +48,7 @@ public class ShieldBlock extends PowerBlock{
 			if(!entity.shield.active){
 				entity.shield.add();
 			}
-
-			entity.power -= powerDrain * Timers.delta();
+			
 		}else{
 			if(entity.shield.active && !(Vars.infiniteAmmo && Vars.debug)){
 				entity.shield.removeDelay();

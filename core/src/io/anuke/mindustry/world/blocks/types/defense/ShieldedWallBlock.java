@@ -21,7 +21,6 @@ public class ShieldedWallBlock extends PowerBlock{
 		super(name);
 		destructible = true;
 		update = false;
-		voltage = 0.00001f;
 	}
 	
 	@Override

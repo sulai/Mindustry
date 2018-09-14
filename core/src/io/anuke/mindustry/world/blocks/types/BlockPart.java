@@ -68,7 +68,7 @@ public class BlockPart extends Block implements PowerAcceptor, LiquidAcceptor{
 		if(block instanceof PowerAcceptor){
 			return ((PowerAcceptor)block).addPower(tile.getLinked(), amount);
 		}else{
-			return amount;
+			return 0;
 		}
 	}
 	

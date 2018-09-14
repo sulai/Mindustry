@@ -13,7 +13,6 @@ import java.io.IOException;
 
 public abstract class PowerBlock extends Block implements PowerAcceptor{
 	public float powerCapacity = 10f;
-	public float voltage = 0.001f;
 	
 	public PowerBlock(String name) {
 		super(name);
@@ -47,12 +46,9 @@ public abstract class PowerBlock extends Block implements PowerAcceptor{
 		return entity.power + 0.001f <= powerCapacity;
 	}
 	
-	//TODO voltage requirement so blocks need specific voltage
 	@Override
 	public float addPower(Tile tile, float amount){
-		if(amount < voltage){
-			return amount;
-		}
+		
 		PowerEntity entity = tile.entity();
 		
 		float canAccept = Math.min(powerCapacity - entity.power, amount);
