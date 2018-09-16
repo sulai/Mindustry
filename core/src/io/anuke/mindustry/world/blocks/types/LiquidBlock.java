@@ -8,6 +8,7 @@ import io.anuke.mindustry.world.Tile;
 import io.anuke.ucore.core.Timers;
 import io.anuke.ucore.graphics.Draw;
 import io.anuke.ucore.util.Mathf;
+import io.anuke.ucore.util.Strings;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -29,6 +30,8 @@ public class LiquidBlock extends Block implements LiquidAcceptor{
 	public void getStats(Array<String> list){
 		super.getStats(list);
 		list.add("[liquidinfo]Liquid Capacity: " + liquidCapacity);
+		// liquids/second does not make much sense for all Conduits
+		// actual throughput depends on "pressure" and flow behavior (flowfactor)
 	}
 	
 	@Override
@@ -58,7 +61,8 @@ public class LiquidBlock extends Block implements LiquidAcceptor{
 		LiquidEntity entity = tile.entity();
 		
 		if(entity.liquidAmount > 0.01f && entity.timer.get(timerFlow, 1)){
-			tryMoveLiquid(tile, tile.getNearby(tile.getRotation()));
+			float amount =  entity.liquidAmount/flowfactor * Math.max(Timers.delta(), 1f);
+			tryMoveLiquid(tile, tile.getNearby(tile.getRotation()), amount);
 		}
 		
 	}
@@ -67,43 +71,43 @@ public class LiquidBlock extends Block implements LiquidAcceptor{
 		LiquidEntity entity = tile.entity();
 		
 		if(entity.liquidAmount > 0.01f){
-			tryMoveLiquid(tile, tile.getNearby(tile.getDump()));
+			tryMoveLiquid(tile, tile.getNearby(tile.getDump()), entity.liquidAmount);
 			tile.setDump((byte)Mathf.mod(tile.getDump() + 1, 4));
 		}
 	}
 	
-	public void tryMoveLiquid(Tile tile, Tile next){
+	public void tryMoveLiquid(Tile tile, Tile next, float amount){
+		if(amount <= 0f)
+			return;
+		
 		LiquidEntity entity = tile.entity();
+		if( amount > entity.liquidAmount )
+			amount = entity.liquidAmount;
 		
-		Liquid liquid = entity.liquid;
-		
-		if(next != null && next.block() instanceof LiquidAcceptor && entity.liquidAmount > 0.01f){
+		if(next != null && next.block() instanceof LiquidAcceptor){
 			LiquidAcceptor other = (LiquidAcceptor)next.block();
-			
-			float flow = Math.min(other.getLiquidCapacity(next) - other.getLiquid(next) - 0.001f, 
-					Math.min(entity.liquidAmount/flowfactor * Math.max(Timers.delta(), 1f), entity.liquidAmount));
-			
-			if(flow <= 0f || entity.liquidAmount < flow) return;
-			
-			if(other.acceptLiquid(next, tile, liquid, flow)){
-				other.handleLiquid(next, tile, liquid, flow);
-				entity.liquidAmount -= flow;
-			}
+			entity.liquidAmount -= other.handleLiquid(next, tile, entity.liquid, amount);
 		}
 	}
 	
 	@Override
-	public boolean acceptLiquid(Tile tile, Tile source, Liquid liquid, float amount){
-		LiquidEntity entity = tile.entity();
-		
-		return entity.liquidAmount + amount < liquidCapacity && (entity.liquid == liquid || entity.liquidAmount <= 0.01f);
+	public float handleLiquid(Tile tile, Tile source, Liquid liquid, float amount){
+		// do not take liquid from wrong direction (conduits)
+		if(rotate && tile.getRotation() == tile.relativeTo(source.x, source.y))
+			return 0f;
+		return handleLiquid(liquidCapacity, tile.entity(), liquid, amount);
 	}
 	
-	@Override
-	public void handleLiquid(Tile tile, Tile source, Liquid liquid, float amount){
-		LiquidEntity entity = tile.entity();
-		entity.liquid = liquid;
-		entity.liquidAmount += amount;
+	public static float handleLiquid(float liquidCapacity, LiquidEntity entity, Liquid liquid, float amount){
+
+		// correct liquid or almost empty?
+		if( entity.liquid == liquid || entity.liquidAmount <= 0.01f ) {
+			float transfer = Math.min(liquidCapacity - entity.liquidAmount, amount);
+			entity.liquid = liquid;
+			entity.liquidAmount += transfer;
+			return transfer;
+		}
+		return 0;
 	}
 	
 	@Override

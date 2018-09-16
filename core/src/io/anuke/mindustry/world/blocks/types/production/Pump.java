@@ -13,7 +13,7 @@ import io.anuke.ucore.util.Mathf;
 import io.anuke.ucore.util.Strings;
 
 public class Pump extends LiquidBlock{
-	protected final int timerPump = timers++;
+	
 	protected final int timerDump = timers++;
 	
 	protected float pumpAmount = 2f;
@@ -30,16 +30,16 @@ public class Pump extends LiquidBlock{
 	public boolean canReplace(Block other) {
 		return other instanceof Pump && other != this;
 	}
-
+	
 	@Override
-	public void getStats(Array<String> list){
+	public void getStats(Array<String> list) {
 		super.getStats(list);
 		list.add("[liquidinfo]Liquid/second: " + Strings.toFixed(60f*pumpAmount, 1));
 	}
 	
 	@Override
-	public boolean acceptLiquid(Tile tile, Tile source, Liquid liquid, float amount){
-		return false;
+	public float handleLiquid(Tile tile, Tile source, Liquid liquid, float amount) {
+		return 0;
 	}
 	
 	@Override

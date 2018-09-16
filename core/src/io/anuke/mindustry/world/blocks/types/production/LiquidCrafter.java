@@ -82,8 +82,10 @@ public class LiquidCrafter extends LiquidBlock{
 	}
 	
 	@Override
-	public boolean acceptLiquid(Tile tile, Tile source, Liquid liquid, float amount){
-		return super.acceptLiquid(tile, source, liquid, amount) && liquid == inputLiquid;
+	public float handleLiquid(Tile tile, Tile source, Liquid liquid, float amount) {
+		if(liquid!=inputLiquid)
+			return 0f;
+		return super.handleLiquid(tile, source, liquid, amount);
 	}
 	
 	@Override

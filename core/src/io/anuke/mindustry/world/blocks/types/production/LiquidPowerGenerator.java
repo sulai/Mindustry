@@ -6,6 +6,7 @@ import io.anuke.mindustry.graphics.Fx;
 import io.anuke.mindustry.resource.Liquid;
 import io.anuke.mindustry.world.Tile;
 import io.anuke.mindustry.world.blocks.types.LiquidAcceptor;
+import io.anuke.mindustry.world.blocks.types.LiquidBlock;
 import io.anuke.ucore.core.Effects;
 import io.anuke.ucore.core.Effects.Effect;
 import io.anuke.ucore.core.Timers;
@@ -36,7 +37,7 @@ public class LiquidPowerGenerator extends Generator implements LiquidAcceptor{
 		super.getStats(list);
 		list.add("[liquidinfo]Liquid Capacity: " + (int)liquidCapacity);
 		list.add("[liquidinfo]Power/Liquid: " + Strings.toFixed(powerPerLiquid, 2) + " power/liquid");
-		list.add("[liquidinfo]Max liquid/second: " + Strings.toFixed(maxLiquidGenerate*60f, 2) + " liquid/s");
+		list.add("[liquidinfo]Max liquid/second: " + Strings.toFixed(maxLiquidGenerate * 60f, 2) + " liquid/s");
 		list.add("[liquidinfo]Input: " + generateLiquid);
 	}
 	
@@ -46,10 +47,10 @@ public class LiquidPowerGenerator extends Generator implements LiquidAcceptor{
 		
 		LiquidPowerEntity entity = tile.entity();
 		
-		if(entity.liquid == null) return;
+		if(entity.liquidEntity.liquid == null) return;
 		
-		Draw.color(entity.liquid.color);
-		Draw.alpha(entity.liquidAmount / liquidCapacity);
+		Draw.color(entity.liquidEntity.liquid.color);
+		Draw.alpha(entity.liquidEntity.liquidAmount / liquidCapacity);
 		drawLiquidCenter(tile);
 		Draw.color();
 	}
@@ -62,11 +63,11 @@ public class LiquidPowerGenerator extends Generator implements LiquidAcceptor{
 	public void update(Tile tile){
 		LiquidPowerEntity entity = tile.entity();
 		
-		if(entity.liquidAmount > 0){
-			float used = Math.min(entity.liquidAmount, maxLiquidGenerate * Timers.delta());
+		if(entity.liquidEntity.liquidAmount > 0){
+			float used = Math.min(entity.liquidEntity.liquidAmount, maxLiquidGenerate * Timers.delta());
 			used = Math.min(used, (powerCapacity - entity.power)/powerPerLiquid);
 			
-			entity.liquidAmount -= used;
+			entity.liquidEntity.liquidAmount -= used;
 			entity.power += used * powerPerLiquid;
 			
 			if(used > 0.001f && Mathf.chance(0.05 * Timers.delta())){
@@ -85,23 +86,19 @@ public class LiquidPowerGenerator extends Generator implements LiquidAcceptor{
 	}
 	
 	@Override
-	public boolean acceptLiquid(Tile tile, Tile source, Liquid liquid, float amount){
-		LiquidPowerEntity entity = tile.entity();
+	public float handleLiquid(Tile tile, Tile source, Liquid liquid, float amount){
 		
-		return liquid == generateLiquid && entity.liquidAmount + amount < liquidCapacity && (entity.liquid == liquid || entity.liquidAmount <= 0.01f);
-	}
-	
-	@Override
-	public void handleLiquid(Tile tile, Tile source, Liquid liquid, float amount){
-		LiquidPowerEntity entity = tile.entity();
-		entity.liquid = liquid;
-		entity.liquidAmount += amount;
+		// needs liquid to run, but its not the right type
+		if( generateLiquid!=null && liquid!=generateLiquid )
+			return 0;
+		
+		return LiquidBlock.handleLiquid(liquidCapacity, ((LiquidPowerEntity)tile.entity()).liquidEntity, liquid, amount);
 	}
 	
 	@Override
 	public float getLiquid(Tile tile){
 		LiquidPowerEntity entity = tile.entity();
-		return entity.liquidAmount;
+		return entity.liquidEntity.liquidAmount;
 	}
 
 	@Override
@@ -110,22 +107,19 @@ public class LiquidPowerGenerator extends Generator implements LiquidAcceptor{
 	}
 	
 	public static class LiquidPowerEntity extends PowerEntity{
-		public Liquid liquid;
-		public float liquidAmount;
+		
+		public LiquidBlock.LiquidEntity liquidEntity = new LiquidBlock.LiquidEntity();
 		
 		@Override
 		public void write(DataOutputStream stream) throws IOException{
 			super.write(stream);
-			stream.writeByte(liquid == null ? -1 : liquid.id);
-			stream.writeByte((byte)(liquidAmount));
+			liquidEntity.write(stream);
 		}
 		
 		@Override
 		public void read(DataInputStream stream) throws IOException{
 			super.read(stream);
-			byte id = stream.readByte();
-			liquid = id == -1 ? null : Liquid.getByID(id);
-			liquidAmount = stream.readByte();
+			liquidEntity.read(stream);
 		}
 	}
 

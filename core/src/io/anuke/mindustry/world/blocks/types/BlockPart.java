@@ -38,16 +38,11 @@ public class BlockPart extends Block implements PowerAcceptor, LiquidAcceptor{
 	}
 
 	@Override
-	public boolean acceptLiquid(Tile tile, Tile source, Liquid liquid, float amount){
+	public float handleLiquid(Tile tile, Tile source, Liquid liquid, float amount){
 		Block block = linked(tile);
-		return block instanceof LiquidAcceptor 
-				&& ((LiquidAcceptor)block).acceptLiquid(tile.getLinked(), source, liquid, amount);
-	}
-
-	@Override
-	public void handleLiquid(Tile tile, Tile source, Liquid liquid, float amount){
-		Block block = linked(tile);
-		((LiquidAcceptor)block).handleLiquid(tile.getLinked(), source, liquid, amount);
+		if(block instanceof LiquidAcceptor)
+			return ((LiquidAcceptor)block).handleLiquid(tile.getLinked(), source, liquid, amount);
+		return 0f;
 	}
 	
 	@Override

@@ -58,6 +58,7 @@ public class NuclearReactor extends LiquidPowerGenerator{
 	@Override
 	public void getStats(Array<String> list){
 		super.getStats(list);
+		list.add("[liquidinfo]Liquid/second: " + Strings.toFixed(heating/coolantPower*60f, 1));
 		list.add("[powerinfo]Input Item: " + generateItem);
 		list.add("[powerinfo]Max Power Generation/second: " + Strings.toFixed(powerMultiplier*60f, 2));
 		list.removeValue(list.select(s -> s.contains("Power/Liquid")).iterator().next(), true);
@@ -80,10 +81,10 @@ public class NuclearReactor extends LiquidPowerGenerator{
 			}
 		}
 		
-		if(entity.liquidAmount > 0){
-			float maxCool = Math.min(entity.liquidAmount * coolantPower, entity.heat);
+		if(entity.liquidEntity.liquidAmount > 0){
+			float maxCool = Math.min(entity.liquidEntity.liquidAmount * coolantPower, entity.heat);
 			entity.heat -= maxCool; //TODO steam when cooling large amounts?
-			entity.liquidAmount -= maxCool / coolantPower;
+			entity.liquidEntity.liquidAmount -= maxCool / coolantPower;
 		}
 		
 		if(entity.heat > smokeThreshold){
