@@ -4,8 +4,10 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.utils.Array;
 import static io.anuke.mindustry.Vars.*;
 import io.anuke.mindustry.entities.TileEntity;
+import io.anuke.mindustry.world.Block;
 import io.anuke.mindustry.world.Tile;
 import io.anuke.mindustry.world.blocks.types.PowerBlock;
+import io.anuke.mindustry.world.blocks.types.Wall;
 import io.anuke.ucore.core.Timers;
 import io.anuke.ucore.graphics.Draw;
 import io.anuke.ucore.util.Strings;
@@ -74,5 +76,9 @@ public class ShieldedWallBlock extends PowerBlock{
 	
 	static class ShieldedWallEntity extends PowerEntity{
 		public float hit;
+	}
+	
+	public boolean canReplace(Block other){
+		return other instanceof Wall && health >= other.health;
 	}
 }
