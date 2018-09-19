@@ -32,12 +32,15 @@ public class EnemySpawn{
 	}
 	
 	public int evaluate(int wave, int lane){
+		return evaluate(wave, lane, this.scaling * state.difficulty.enemyScaling);
+	}
+	
+	public int evaluate(int wave, int lane, float enemyScaling){
 		if(wave < after || wave > before || (wave - after) % spacing != 0){
 			return 0;
 		}
-		float scaling = this.scaling * state.difficulty.enemyScaling;
 		
-		return Math.min(amount-1 + Math.max((int)((wave / spacing) / scaling), 1) + (tier(wave, lane)-1) * tierscaleback, max);
+		return Math.min(amount-1 + Math.max((int)((wave / spacing) / enemyScaling), 1) + (tier(wave, lane)-1) * tierscaleback, max);
 	}
 	
 	public int tier(int wave, int lane){
