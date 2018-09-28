@@ -9,6 +9,7 @@ import io.anuke.mindustry.world.blocks.types.Wall;
 import io.anuke.ucore.core.Effects;
 import io.anuke.ucore.core.Effects.Effect;
 import io.anuke.ucore.entities.Entities;
+import io.anuke.ucore.entities.EntityGroup;
 import io.anuke.ucore.entities.SolidEntity;
 import io.anuke.ucore.graphics.Draw;
 
@@ -28,6 +29,7 @@ public class Door extends Wall{
 		super(name);
 		solid = false;
 		solidifes = true;
+		update = true;
 	}
 	
 	@Override
@@ -51,7 +53,8 @@ public class Door extends Wall{
 	public void tapped(Tile tile){
 		DoorEntity entity = tile.entity();
 		
-		if(anyEntities(tile) && entity.open){
+		// don't close if locked by any entity
+		if( doorLocked(tile) && entity.open){
 			return;
 		}
 		
@@ -63,28 +66,39 @@ public class Door extends Wall{
 		}
 	}
 	
-	boolean anyEntities(Tile tile){
+	@Override
+	public void update(Tile tile) {
+		DoorEntity entity = tile.entity();
+		// automatic door: open and close when a player is close
+		if( anyEntityNearby(tile, playerGroup, tilesize)) {
+			if( !entity.open ) {
+				tapped(tile);
+			}
+		}
+		else if( entity.open ) {
+			tapped(tile);
+		}
+	}
+	
+	boolean doorLocked(Tile tile){
+		return anyEntityNearby(tile, enemyGroup, 0)
+				|| anyEntityNearby(tile, playerGroup, 0);
+		
+	}
+	
+	private boolean anyEntityNearby(Tile tile, EntityGroup<?> group, int r) {
 		int x = tile.x, y = tile.y;
 		Block type = tile.block();
 		rect.setSize(type.width * tilesize, type.height * tilesize);
 		rect.setCenter(tile.drawx(), tile.drawy());
 		
-		for(SolidEntity e : Entities.getNearby(enemyGroup, x * tilesize, y * tilesize, tilesize * 2f)){
+		for(SolidEntity e : Entities.getNearby(group, x * tilesize-r, y * tilesize-r, tilesize * 2f+r)){
 			Rectangle rect = e.hitbox.getRect(e.x, e.y);
 
 			if(this.rect.overlaps(rect)){
 				return true;
 			}
 		}
-
-		for(SolidEntity e : Entities.getNearby(playerGroup, x * tilesize, y * tilesize, tilesize * 2f)){
-			Rectangle rect = e.hitbox.getRect(e.x, e.y);
-
-			if(this.rect.overlaps(rect)){
-				return true;
-			}
-		}
-		
 		return false;
 	}
 	
