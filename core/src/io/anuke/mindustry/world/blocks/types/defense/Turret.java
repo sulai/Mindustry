@@ -19,6 +19,7 @@ import io.anuke.ucore.entities.Entities;
 import io.anuke.ucore.graphics.Draw;
 import io.anuke.ucore.graphics.Lines;
 import io.anuke.ucore.util.Angles;
+import io.anuke.ucore.util.Bundles;
 import io.anuke.ucore.util.Mathf;
 import io.anuke.ucore.util.Strings;
 import io.anuke.ucore.util.Translator;
@@ -75,6 +76,11 @@ public class Turret extends Block{
 		list.add("[turretinfo]Bullets: " + bullets);
 		list.add("[turretinfo]Damage/Bullet: " + bullet.getTotalDamage());
 		list.add("[turretinfo]Damage/Second: " + Strings.toFixed(bullet.getTotalDamage()* bullets *60f/reload, 1));
+	}
+	
+	@Override
+	public CharSequence getKeyStat() {
+		return Bundles.get("text.blocks.ammo")+": " + getAmmo().name;
 	}
 	
 	@Override
@@ -241,6 +247,10 @@ public class Turret extends Block{
 		new Bullet(bullet, tile.entity, tile.drawx() + tr.x, tile.drawy() + tr.y, angle).add();
 	}
 	
+	public Item getAmmo() {
+		return ammo;
+	}
+	
 	public static class TurretEntity extends TileEntity{
 		public TileEntity blockTarget;
 		public int ammo;
@@ -257,4 +267,5 @@ public class Turret extends Block{
 			this.ammo = stream.readInt();
 		}
 	}
+	
 }

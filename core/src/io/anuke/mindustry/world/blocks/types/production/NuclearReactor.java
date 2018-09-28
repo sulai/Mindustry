@@ -60,9 +60,13 @@ public class NuclearReactor extends LiquidPowerGenerator{
 		super.getStats(list);
 		list.add("[liquidinfo]Liquid/second: " + Strings.toFixed(heating/coolantPower*60f, 1));
 		list.add("[powerinfo]Input Item: " + generateItem);
-		list.add("[powerinfo]Max Power Generation/second: " + Strings.toFixed(powerMultiplier*60f, 2));
 		list.removeValue(list.select(s -> s.contains("Power/Liquid")).iterator().next(), true);
 		list.removeValue(list.select(s -> s.contains("Max liquid/second:")).iterator().next(), true);
+	}
+	
+	@Override
+	public String getPowerGenerationPerSecond() {
+		return Strings.toFixed(powerMultiplier*60f, 2);
 	}
 	
 	@Override

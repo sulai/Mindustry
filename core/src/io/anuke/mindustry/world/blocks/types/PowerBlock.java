@@ -6,6 +6,7 @@ import io.anuke.mindustry.entities.TileEntity;
 import io.anuke.mindustry.world.Block;
 import io.anuke.mindustry.world.BlockBar;
 import io.anuke.mindustry.world.Tile;
+import io.anuke.ucore.util.Bundles;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -26,6 +27,11 @@ public abstract class PowerBlock extends Block implements PowerAcceptor{
 	public void getStats(Array<String> list){
 		super.getStats(list);
 		list.add("[powerinfo]Power Capacity: " + powerCapacity);
+	}
+	
+	@Override
+	public CharSequence getKeyStat() {
+		return Bundles.get("text.blocks.powercapacity")+": " + (int)powerCapacity;
 	}
 	
 	/**Tries adding all the power with no remainder, returns success.*/

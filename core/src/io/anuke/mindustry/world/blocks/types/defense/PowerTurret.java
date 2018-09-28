@@ -9,6 +9,7 @@ import io.anuke.mindustry.world.Tile;
 import io.anuke.mindustry.world.blocks.types.PowerAcceptor;
 import io.anuke.ucore.graphics.Draw;
 import io.anuke.ucore.graphics.Lines;
+import io.anuke.ucore.util.Bundles;
 import io.anuke.ucore.util.Strings;
 
 import java.io.DataInputStream;
@@ -31,6 +32,11 @@ public abstract class PowerTurret extends Turret implements PowerAcceptor{
 		super.getStats(list);
 		list.add("[powerinfo]Power Capacity: " + (int)powerCapacity);
 		list.add("[powerinfo]Power/shot: " + Strings.toFixed(powerUsed, 1));
+	}
+	
+	@Override
+	public CharSequence getKeyStat() {
+		return Bundles.get("text.blocks.powercapacity")+": " + (int)powerCapacity;
 	}
 	
 	@Override

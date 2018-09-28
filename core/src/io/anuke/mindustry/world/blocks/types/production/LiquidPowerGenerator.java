@@ -42,6 +42,11 @@ public class LiquidPowerGenerator extends Generator implements LiquidAcceptor{
 	}
 	
 	@Override
+	public String getPowerGenerationPerSecond() {
+		return Strings.toFixed(maxLiquidGenerate*60f*powerPerLiquid, 2);
+	}
+	
+	@Override
 	public void draw(Tile tile){
 		super.draw(tile);
 		

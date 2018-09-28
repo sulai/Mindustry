@@ -23,7 +23,6 @@ import io.anuke.ucore.scene.ui.*;
 import io.anuke.ucore.scene.ui.layout.Stack;
 import io.anuke.ucore.scene.ui.layout.Table;
 import io.anuke.ucore.util.Bundles;
-import io.anuke.ucore.util.Mathf;
 import io.anuke.ucore.util.Strings;
 import static io.anuke.mindustry.Vars.*;
 
@@ -295,7 +294,7 @@ public class BlocksFragment implements Fragment{
 		
 		desctable.row();
 		
-		Label label = new Label("[health]"+ Bundles.get("text.health")+": " + recipe.result.health);
+		Label label = new Label("[health]"+recipe.result.getKeyStat());
 		label.setWrap(true);
 		desctable.add(label).width(200).padTop(4).padBottom(2);
 	}

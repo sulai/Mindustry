@@ -12,6 +12,7 @@ import io.anuke.mindustry.world.blocks.types.LiquidBlock;
 import io.anuke.ucore.core.Effects;
 import io.anuke.ucore.core.Effects.Effect;
 import io.anuke.ucore.graphics.Draw;
+import io.anuke.ucore.util.Bundles;
 import io.anuke.ucore.util.Strings;
 
 public class LiquidCrafter extends LiquidBlock{
@@ -47,6 +48,11 @@ public class LiquidCrafter extends LiquidBlock{
 		if(input != null) list.add("[iteminfo]Item Capacity: " + itemCapacity);
 		if(input != null) list.add("[iteminfo]Input item: " + input + " x " + inputAmount);
 		list.add("[iteminfo]Output: " + output);
+	}
+	
+	@Override
+	public CharSequence getKeyStat() {
+		return Bundles.get("text.blocks.output")+": " + output;
 	}
 	
 	@Override

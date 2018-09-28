@@ -32,9 +32,13 @@ public class ItemPowerGenerator extends Generator{
 	public void getStats(Array<String> list){
 		super.getStats(list);
 		list.add("[powerinfo]Item Capacity: " + itemCapacity);
-		list.add("[powerinfo]Power Generation/second: " + Strings.toFixed(powerOutput*60f, 2));
 		list.add("[powerinfo]Generation Seconds/item: " + Strings.toFixed(itemDuration/60f, 2));
 		list.add("[powerinfo]Input: " + generateItem);
+	}
+	
+	@Override
+	public String getPowerGenerationPerSecond() {
+		return Strings.toFixed(powerOutput*60f, 2);
 	}
 	
 	@Override

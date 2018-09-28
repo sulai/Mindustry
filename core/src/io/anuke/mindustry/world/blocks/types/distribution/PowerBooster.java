@@ -9,7 +9,7 @@ import java.util.List;
 
 import io.anuke.mindustry.world.Tile;
 import io.anuke.mindustry.world.blocks.types.PowerAcceptor;
-import io.anuke.mindustry.world.blocks.types.production.Generator;
+import io.anuke.mindustry.world.blocks.types.production.Emitter;
 import io.anuke.ucore.core.Timers;
 import io.anuke.ucore.graphics.Draw;
 import io.anuke.ucore.graphics.Lines;
@@ -18,7 +18,7 @@ import io.anuke.ucore.util.Strings;
 import static io.anuke.mindustry.Vars.tilesize;
 import static io.anuke.mindustry.Vars.world;
 
-public class PowerBooster extends Generator{
+public class PowerBooster extends Emitter {
 	protected final int timerGenerate = timers++;
 	
 	public int powerRange = 4;
@@ -90,7 +90,7 @@ public class PowerBooster extends Generator{
 					if(dest != null
 							&& dest.block() instanceof PowerAcceptor
 							&& ((PowerAcceptor) dest.block()).acceptsPower(dest)
-							&& !(dest.block() instanceof Generator)) { // do not distribute to other power lasers
+							&& !(dest.block() instanceof Emitter)) { // do not distribute to other power lasers
 						
 						acceptors.add(dest);
 						

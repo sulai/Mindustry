@@ -7,6 +7,7 @@ import io.anuke.mindustry.world.Block;
 import io.anuke.mindustry.world.BlockBar;
 import io.anuke.mindustry.world.Tile;
 import io.anuke.ucore.core.Timers;
+import io.anuke.ucore.util.Bundles;
 import io.anuke.ucore.util.Mathf;
 
 public class Router extends Block{
@@ -25,6 +26,11 @@ public class Router extends Block{
 	public void getStats(Array<String> list){
 		super.getStats(list);
 		list.add("[iteminfo]Capacity: " + capacity);
+	}
+	
+	@Override
+	public CharSequence getKeyStat() {
+		return Bundles.get("text.blocks.capacity")+": " + capacity;
 	}
 	
 	@Override

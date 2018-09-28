@@ -10,6 +10,7 @@ import io.anuke.mindustry.world.blocks.types.PowerBlock;
 import io.anuke.mindustry.world.blocks.types.Wall;
 import io.anuke.ucore.core.Timers;
 import io.anuke.ucore.graphics.Draw;
+import io.anuke.ucore.util.Bundles;
 import io.anuke.ucore.util.Strings;
 
 import static io.anuke.mindustry.Vars.renderer;
@@ -48,6 +49,11 @@ public class ShieldedWallBlock extends PowerBlock{
 	public void getStats(Array<String> list){
 		super.getStats(list);
 		list.add("[powerinfo]Power Drain/damage: " + Strings.toFixed(powerPerDamage, 2));
+	}
+	
+	@Override
+	public CharSequence getKeyStat() {
+		return Bundles.get("text.health")+": " + health;
 	}
 	
 	@Override

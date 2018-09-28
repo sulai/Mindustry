@@ -335,4 +335,8 @@ public class Block{
 		return tiles;
 	}
 	
+	/** short description as shown in BlocksFragment */
+	public CharSequence getKeyStat() {
+		return Bundles.get("text.health")+": " + health;
+	}
 }

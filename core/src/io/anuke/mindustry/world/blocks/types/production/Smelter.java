@@ -12,6 +12,7 @@ import io.anuke.ucore.core.Effects;
 import io.anuke.ucore.core.Effects.Effect;
 import io.anuke.ucore.core.Timers;
 import io.anuke.ucore.graphics.Draw;
+import io.anuke.ucore.util.Bundles;
 import io.anuke.ucore.util.Mathf;
 import io.anuke.ucore.util.Strings;
 
@@ -57,6 +58,11 @@ public class Smelter extends Block{
 		list.add("[craftinfo]Max output/second: " + Strings.toFixed(60f/craftTime, 1));
 		list.add("[craftinfo]Input Capacity: " + capacity);
 		list.add("[craftinfo]Output Capacity: " + capacity);
+	}
+	
+	@Override
+	public CharSequence getKeyStat() {
+		return Bundles.get("text.blocks.output")+": " + result;
 	}
 	
 	@Override
