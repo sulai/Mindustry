@@ -37,7 +37,7 @@ public class Vars{
 	//whether to send block state change events to players
 	public static final boolean syncBlockState = false;
 	//how far away from the player blocks can be placed
-	public static final float placerange = 66;
+	public static final float placerange = 120;
 	//respawn time in frames
 	public static final float respawnduration = 60*4;
 	//time between waves in frames (on normal mode)
