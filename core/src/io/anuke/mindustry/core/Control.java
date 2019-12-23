@@ -175,8 +175,8 @@ public class Control extends Module{
 
 			int last = Settings.getInt("hiscore" + world.getMap().name, 0);
 
-			if(state.waveSurvived > last && !state.mode.infiniteResources && !state.mode.disableWaveTimer){
-				Settings.putInt("hiscore" + world.getMap().name, state.waveSurvived);
+			if(state.waveSurvived+1 > last && !state.mode.infiniteResources && !state.mode.disableWaveTimer){
+				Settings.putInt("hiscore" + world.getMap().name, state.waveSurvived+1);
 				Settings.save();
 				hiscore = true;
 			}
