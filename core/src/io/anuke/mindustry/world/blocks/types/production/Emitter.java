@@ -22,7 +22,7 @@ import io.anuke.ucore.util.*;
 import static io.anuke.mindustry.Vars.*;
 
 public abstract class Emitter extends PowerBlock{
-	public static final int powerTime = 2;
+	
 	public static boolean drawRangeOverlay = false;
 
 	protected Translator t1 = new Translator();

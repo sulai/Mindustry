@@ -19,7 +19,6 @@ import static io.anuke.mindustry.Vars.tilesize;
 import static io.anuke.mindustry.Vars.world;
 
 public class PowerBooster extends Emitter {
-	protected final int timerGenerate = timers++;
 	
 	public int powerRange = 4;
 
@@ -71,10 +70,6 @@ public class PowerBooster extends Emitter {
 
 	protected void distributePower(Tile tile){
 		PowerEntity p = tile.entity();
-		
-		if(!p.timer.get(timerGenerate, powerTime)){
-			return;
-		}
 		
 		// get list of valid power acceptors
 		List<Tile> acceptors = new ArrayList<>();
