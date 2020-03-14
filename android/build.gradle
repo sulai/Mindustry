@@ -58,7 +58,7 @@ android {
             versionNameResult = "$versionNumber-$versionType-${props['build'].replace(" ", "-")}"
         }
 
-        applicationId "io.anuke.mindustry"
+        applicationId "io.anuke.mindustry.classic"
         minSdkVersion 14
         targetSdkVersion 27
         versionCode code
